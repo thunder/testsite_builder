@@ -71,13 +71,6 @@ class ConfigCreator {
     foreach ($this->getEntityTypes() as $entity_type) {
       $definition = $this->entityTypeManager->getDefinition($entity_type);
 
-      // Delete fields.
-      $entities = $this->entityTypeManager->getStorage('field_config')->loadByProperties(['entity_type' => $entity_type]);
-      $this->entityTypeManager->getStorage('field_config')->delete($entities);
-
-      $entities = $this->entityTypeManager->getStorage('field_storage_config')->loadByProperties(['entity_type' => $entity_type]);
-      $this->entityTypeManager->getStorage('field_storage_config')->delete($entities);
-
       if ($definition->getBundleEntityType()) {
         // Delete all entities.
         $entities = $this->entityTypeManager->getStorage($entity_type)->loadMultiple();
@@ -87,6 +80,13 @@ class ConfigCreator {
         $bundles = $this->entityTypeManager->getStorage($definition->getBundleEntityType())->loadMultiple();
         $this->entityTypeManager->getStorage($definition->getBundleEntityType())->delete($bundles);
       }
+
+      // Delete fields.
+      $entities = $this->entityTypeManager->getStorage('field_config')->loadByProperties(['entity_type' => $entity_type]);
+      $this->entityTypeManager->getStorage('field_config')->delete($entities);
+
+      $entities = $this->entityTypeManager->getStorage('field_storage_config')->loadByProperties(['entity_type' => $entity_type]);
+      $this->entityTypeManager->getStorage('field_storage_config')->delete($entities);
     }
 
     return $this;
