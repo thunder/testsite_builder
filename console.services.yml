@@ -1,0 +1,6 @@
+services:
+  testsite_builder.create_config:
+    class: Drupal\testsite_builder\Command\CreateConfigCommand
+    arguments: ['@testsite_builder.configCreator']
+    tags:
+      - { name: drupal.command }

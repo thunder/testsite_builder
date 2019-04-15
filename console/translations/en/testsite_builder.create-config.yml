@@ -1,0 +1,5 @@
+description: 'Create config from a report file.'
+arguments:
+    file: 'The report file the config should created of.'
+messages:
+    success: 'Created config.'
