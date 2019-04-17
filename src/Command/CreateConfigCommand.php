@@ -3,8 +3,10 @@
 namespace Drupal\testsite_builder\Command;
 
 use Drupal\testsite_builder\ConfigCreator;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Drupal\Console\Core\Command\ContainerAwareCommand;
 // phpcs:disable
@@ -52,10 +54,28 @@ class CreateConfigCommand extends ContainerAwareCommand {
   protected function execute(InputInterface $input, OutputInterface $output) {
     $file = $input->getArgument('file');
 
-    $this->configCreator
-      ->setReportData($file)
-      ->cleanup()
-      ->create();
+    $this->configCreator->setReportData($file);
+
+    $this->getIo()->newLine();
+    if (!$this->getIo()->confirm($this->trans('commands.testsite_builder.create-config.messages.confirm'))) {
+      $this->getIo()->comment($this->trans('commands.common.questions.canceled'));
+      return;
+    }
+
+    $this->getIo()->comment($this->trans('commands.testsite_builder.create-config.messages.cleanup'));
+    $this->configCreator->cleanup();
+
+    $this->getIo()->newLine();
+    $this->getIo()->comment($this->trans('commands.testsite_builder.create-config.messages.create_config'));
+    $this->configCreator->create();
+
+    $this->getIo()->newLine();
+    $this->getIo()->comment($this->trans('commands.cache.rebuild.messages.rebuild'));
+    $command = $this->getApplication()->find('cache:rebuild');
+    $command->run(new ArrayInput([]), new NullOutput());
+
+    $this->getIo()->newLine();
+    $this->getIo()->success($this->trans('commands.testsite_builder.create-config.messages.success'));
   }
 
 }
