@@ -122,32 +122,71 @@ class ConfigCreator {
         ]);
         $bundle_entity->save();
 
+        $form_display = entity_get_form_display($entity_type, $bundle_entity->id(), 'default');
+
         // Create fields.
         foreach ($bundle['fields'] as $field_type => $count) {
           if (!isset($fieldTypeDefinitions[$field_type])) {
             continue;
           }
 
+          if (in_array($field_type, ['entity_reference', 'entity_reference_revisions'])) {
+            $count = array_sum($count);
+          }
+
           for ($i = 0; $i < $count; $i++) {
             $fieldName = $field_type . '_' . $i;
             if (!in_array($fieldName, $createdFields)) {
-              $field_storage = $this->entityTypeManager->getStorage('field_storage_config')->create([
+              $field_storage_config = [
                 'field_name' => $fieldName,
                 'entity_type' => $entity_type,
                 'type' => $field_type,
-              ]);
+                'settings' => [],
+              ];
+
+              switch ($field_type) {
+                case 'entity_reference_revisions':
+                  $field_storage_config['settings']['target_type'] = 'paragraph';
+                  $field_storage_config['cardinality'] = -1;
+                  break;
+
+                case 'entity_reference':
+                  $field_storage_config['settings']['target_type'] = reset(array_keys($bundle['fields'][$field_type]));
+                  $field_storage_config['cardinality'] = -1;
+                  break;
+              }
+
+              /** @var \Drupal\field\FieldStorageConfigInterface $field_storage */
+              $field_storage = $this->entityTypeManager->getStorage('field_storage_config')->create($field_storage_config);
               $field_storage->save();
               $createdFields[] = $fieldName;
             }
-            $field_instance = $this->entityTypeManager->getStorage('field_config')->create([
+
+            $field_instance_config = [
               'field_name' => $fieldName,
               'entity_type' => $entity_type,
               'type' => $field_type,
               'bundle' => $bundle_entity->id(),
-            ]);
+              'settings' => [],
+            ];
+
+            switch ($field_type) {
+              case 'entity_reference_revisions':
+                $field_instance_config['settings']['handler'] = 'default:paragraph';
+                $field_instance_config['settings']['handler_settings']['negate'] = 1;
+                break;
+            }
+
+            /** @var \Drupal\field\FieldConfigInterface $field_instance */
+            $field_instance = $this->entityTypeManager->getStorage('field_config')->create($field_instance_config);
             $field_instance->save();
+
+            $field_type_definition = $this->fieldTypePluginManager->getDefinition($field_instance->getFieldStorageDefinition()->getType());
+            $form_display->setComponent($fieldName, ['type' => $field_type_definition['default_widget']]);
           }
         }
+
+        $form_display->save();
       }
     }
 
