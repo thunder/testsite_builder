@@ -1,0 +1,8 @@
+description: 'Create config from a report file.'
+arguments:
+  file: 'The report file the config should created of.'
+messages:
+  confirm: 'Are you sure you want to delete all existing content and the configuration of most of the content entity types?'
+  cleanup: 'Cleanup - Deleting existing bundles, fields...'
+  create_config: 'Preparation - Creating new bundles and fields...'
+  success: 'Configuration successfully created.'
