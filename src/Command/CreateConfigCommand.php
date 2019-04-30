@@ -56,26 +56,27 @@ class CreateConfigCommand extends ContainerAwareCommand {
 
     $this->configCreator->setReportData($file);
 
-    $this->getIo()->newLine();
-    if (!$this->getIo()->confirm($this->trans('commands.testsite_builder.create-config.messages.confirm'))) {
-      $this->getIo()->comment($this->trans('commands.common.questions.canceled'));
+    $io = $this->getIo();
+    $io->newLine();
+    if (!$io->confirm($this->trans('commands.testsite_builder.create-config.messages.confirm'))) {
+      $io->comment($this->trans('commands.common.questions.canceled'));
       return;
     }
 
-    $this->getIo()->comment($this->trans('commands.testsite_builder.create-config.messages.cleanup'));
+    $io->comment($this->trans('commands.testsite_builder.create-config.messages.cleanup'));
     $this->configCreator->cleanup();
 
-    $this->getIo()->newLine();
-    $this->getIo()->comment($this->trans('commands.testsite_builder.create-config.messages.create_config'));
+    $io->newLine();
+    $io->comment($this->trans('commands.testsite_builder.create-config.messages.create_config'));
     $this->configCreator->create();
 
-    $this->getIo()->newLine();
-    $this->getIo()->comment($this->trans('commands.cache.rebuild.messages.rebuild'));
+    $io->newLine();
+    $io->comment($this->trans('commands.cache.rebuild.messages.rebuild'));
     $command = $this->getApplication()->find('cache:rebuild');
     $command->run(new ArrayInput([]), new NullOutput());
 
-    $this->getIo()->newLine();
-    $this->getIo()->success($this->trans('commands.testsite_builder.create-config.messages.success'));
+    $io->newLine();
+    $io->success($this->trans('commands.testsite_builder.create-config.messages.success'));
   }
 
 }

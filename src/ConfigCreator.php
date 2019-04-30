@@ -9,7 +9,7 @@ use Drupal\Core\Field\FieldTypePluginManagerInterface;
 /**
  * The ConfigCreator class.
  *
- * @package Drupal\sampler
+ * @package Drupal\testsite_builder
  */
 class ConfigCreator {
 
