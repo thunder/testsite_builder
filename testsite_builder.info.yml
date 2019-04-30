@@ -1,6 +1,6 @@
 name: 'Testsite builder'
 type: module
-description: 'Provide Drush 8, 9 and Drupal console commands to sample statistical data for the Thunder performance project.'
+description: 'Provide a Drupal console command to create a site from a report file.'
 package: Thunder
 core: '8.x'
 php: '7.0'
