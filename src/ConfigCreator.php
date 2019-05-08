@@ -131,7 +131,8 @@ class ConfigCreator {
           }
 
           if (in_array($field_type, ['entity_reference', 'entity_reference_revisions'])) {
-            $count = array_sum($count);
+            $field_settings = $count;
+            $count = count($field_settings);
           }
 
           for ($i = 0; $i < $count; $i++) {
@@ -146,13 +147,9 @@ class ConfigCreator {
 
               switch ($field_type) {
                 case 'entity_reference_revisions':
-                  $field_storage_config['settings']['target_type'] = 'paragraph';
-                  $field_storage_config['cardinality'] = -1;
-                  break;
-
                 case 'entity_reference':
-                  $field_storage_config['settings']['target_type'] = reset(array_keys($bundle['fields'][$field_type]));
-                  $field_storage_config['cardinality'] = -1;
+                  $field_storage_config['settings']['target_type'] = $field_settings[$i]['target_type'];
+                  $field_storage_config['cardinality'] = $field_settings[$i]['cardinality'];
                   break;
               }
 
@@ -172,8 +169,8 @@ class ConfigCreator {
 
             switch ($field_type) {
               case 'entity_reference_revisions':
-                $field_instance_config['settings']['handler'] = 'default:paragraph';
-                $field_instance_config['settings']['handler_settings']['negate'] = 1;
+              case 'entity_reference':
+                $field_instance_config['settings']['handler_settings']['target_bundles'] = $field_settings[$i]['target_bundles'];
                 break;
             }
 
