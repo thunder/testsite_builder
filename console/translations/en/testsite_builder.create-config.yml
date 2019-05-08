@@ -1,6 +1,9 @@
 description: 'Create config from a report file.'
 arguments:
   file: 'The report file the config should created of.'
+options:
+  sampled-data: 'The sampled data types output file.'
+  content-creator-config: 'The config creator configuration output file.'
 messages:
   confirm: 'Are you sure you want to delete all existing content and the configuration of most of the content entity types?'
   cleanup: 'Cleanup - Deleting existing bundles, fields...'

@@ -2,3 +2,6 @@ services:
   testsite_builder.configCreator:
     class: Drupal\testsite_builder\ConfigCreator
     arguments: ['@entity_type.manager', '@plugin.manager.field.field_type']
+  testsite_builder.contentCreator:
+    class: Drupal\testsite_builder\ContentCreator
+    arguments: ['@database']

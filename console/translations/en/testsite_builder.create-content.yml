@@ -1,0 +1,9 @@
+description: 'Create content.'
+arguments:
+  config: 'The configuration file for the content creator.'
+  sampled-data: 'The sampled data types file.'
+  output-directory: 'The output directory where generated CSV files will be stored.'
+messages:
+  create_content: 'Creating content...'
+  import_content: 'Importing content...'
+  success: 'CSV Files with content successfully created.'

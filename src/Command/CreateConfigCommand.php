@@ -45,6 +45,8 @@ class CreateConfigCommand extends ContainerAwareCommand {
     $this
       ->setName('testsite-builder:create-config')
       ->addArgument('file', InputArgument::REQUIRED, $this->trans('commands.testsite_builder.create-config.arguments.file'))
+      ->addOption('content-creator-config', NULL, InputArgument::OPTIONAL, 'commands.testsite_builder.create-config.options.content-creator-config')
+      ->addOption('sampled-data', NULL, InputArgument::OPTIONAL, 'commands.testsite_builder.create-config.options.sampled-data')
       ->setDescription($this->trans('commands.testsite_builder.create-config.description'));
   }
 
@@ -55,6 +57,14 @@ class CreateConfigCommand extends ContainerAwareCommand {
     $file = $input->getArgument('file');
 
     $this->configCreator->setReportData($file);
+
+    if ($input->hasOption('content-creator-config')) {
+      $this->configCreator->setContentCreatorFile($input->getOption('content-creator-config'));
+    }
+
+    if ($input->hasOption('sampled-data')) {
+      $this->configCreator->setSampledDataFile($input->getOption('sampled-data'));
+    }
 
     $io = $this->getIo();
     $io->newLine();

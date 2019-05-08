@@ -4,3 +4,8 @@ services:
     arguments: ['@testsite_builder.configCreator']
     tags:
       - { name: drupal.command }
+  testsite_builder.create_content:
+    class: Drupal\testsite_builder\Command\CreateContentCommand
+    arguments: ['@testsite_builder.contentCreator']
+    tags:
+      - { name: drupal.command }
