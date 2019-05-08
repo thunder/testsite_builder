@@ -597,11 +597,6 @@ class ContentCreator {
 
         // Block infinite nesting!
         $unique_bundle_key = $target_entity_type . '_' . $target_entity_bundle;
-
-        // TODO: disable paragraph nesting!
-        if ($target_entity_type === 'paragraph') {
-          $unique_bundle_key = $target_entity_type;
-        }
         if (isset($this->entityTypeReferenceNestingStack[$unique_bundle_key])) {
           continue;
         }
