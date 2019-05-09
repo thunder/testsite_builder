@@ -48,26 +48,18 @@ class ContentCreator {
   ];
 
   /**
-   * Base table row data.
-   *
-   * @var array
-   */
-  protected static $baseTableRowData = [
-    'langcode' => 'en',
-    'uid' => 1,
-    'published' => 1,
-    'default_langcode' => 1,
-    'revision_translation_affected' => 1,
-    'revision_uid' => 0,
-    'revision_default' => 1,
-  ];
-
-  /**
    * Database connection.
    *
    * @var \Drupal\Core\Database\Driver\mysql\Connection
    */
   protected $database;
+
+  /**
+   * Base entity tables plugin manager.
+   *
+   * @var \Drupal\testsite_builder\BaseEntityTablesPluginManager
+   */
+  protected $baseEntityTablesPluginManager;
 
   /**
    * Configuration for ContentCreator.
@@ -128,6 +120,13 @@ class ContentCreator {
   protected $cacheBaseTableRowTemplates = [];
 
   /**
+   * Keeps instances of base entity tables plugins.
+   *
+   * @var array
+   */
+  protected $cacheBaseEntityTablesPlugin = [];
+
+  /**
    * Keeps track of information relation to entity.
    *
    * @var array
@@ -155,9 +154,12 @@ class ContentCreator {
    *
    * @param \Drupal\Core\Database\Connection $database
    *   The database connection.
+   * @param \Drupal\testsite_builder\BaseEntityTablesPluginManager $base_entity_tables_plugin_manager
+   *   The base entity tables plugin manager service.
    */
-  public function __construct(Connection $database) {
+  public function __construct(Connection $database, BaseEntityTablesPluginManager $base_entity_tables_plugin_manager) {
     $this->database = $database;
+    $this->baseEntityTablesPluginManager = $base_entity_tables_plugin_manager;
   }
 
   /**
@@ -264,6 +266,7 @@ class ContentCreator {
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
   public function createCsvFiles() {
     $this->initGlobalState();
@@ -273,17 +276,9 @@ class ContentCreator {
       foreach ($this->config[$entity_type]['_bundles'] as $bundle_type => $bundle) {
         $this->initBundleState($entity_type, $bundle_type);
 
-        $unique_bundle_key = $entity_type . '_' . $bundle_type;
-        if (isset($this->entityTypeReferenceNestingStack[$unique_bundle_key])) {
-          continue;
-        }
-        $this->entityTypeReferenceNestingStack[$unique_bundle_key] = TRUE;
-
         // TODO: TESTING!!!
         // $instances = 100000; // more data.
         $this->createBundle($entity_type, $bundle_type, $bundle['instances']);
-
-        unset($this->entityTypeReferenceNestingStack[$unique_bundle_key]);
       }
 
       // Close all CSV files!
@@ -300,22 +295,47 @@ class ContentCreator {
    *
    * @param string $entity_type
    *   The entity type.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
   protected function initBaseEntityTables($entity_type) {
     if (isset($this->cacheCsvFileHandlers[$entity_type])) {
       return;
     }
 
-    foreach (static::$entityBaseTableKeys as $base_table_type) {
-      if (!isset($this->config[$entity_type][$base_table_type])) {
-        continue;
-      }
-
-      $base_table_name = $this->config[$entity_type][$base_table_type]['name'];
+    foreach ($this->getBaseTableTemplates($entity_type) as $base_table_name => $columns) {
       $this->cacheCsvFileHandlers[$entity_type][$base_table_name] = fopen($this->outputDirectory . '/' . $base_table_name . '.csv', 'w');
-
-      fputcsv($this->cacheCsvFileHandlers[$entity_type][$base_table_name], $this->config[$entity_type][$base_table_type]['_columns']);
+      fputcsv($this->cacheCsvFileHandlers[$entity_type][$base_table_name], array_keys($columns));
     }
+  }
+
+  /**
+   * Get base entity tables plugin.
+   *
+   * @param string $entity_type
+   *   The entity type.
+   *
+   * @return \Drupal\testsite_builder\BaseEntityTablesInterface
+   *   Returns instance of entity base table plugin for provided entity type.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  protected function getBaseEntityTablesPlugin($entity_type) {
+    if (isset($this->cacheBaseEntityTablesPlugin[$entity_type])) {
+      return $this->cacheBaseEntityTablesPlugin[$entity_type];
+    }
+
+    if ($this->baseEntityTablesPluginManager->hasDefinition($entity_type)) {
+      $plugin = $this->baseEntityTablesPluginManager->createInstance($entity_type, $this->config[$entity_type]);
+      $this->cacheBaseEntityTablesPlugin[$entity_type] = $plugin;
+
+      return $this->cacheBaseEntityTablesPlugin[$entity_type];
+    }
+
+    $plugin = $this->baseEntityTablesPluginManager->createInstance('generic', $this->config[$entity_type]);
+    $this->cacheBaseEntityTablesPlugin[$entity_type] = $plugin;
+
+    return $this->cacheBaseEntityTablesPlugin[$entity_type];
   }
 
   /**
@@ -326,37 +346,16 @@ class ContentCreator {
    *
    * @return array
    *   Returns row templates for base tables.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
   protected function getBaseTableTemplates($entity_type) {
     if (isset($this->cacheBaseTableRowTemplates[$entity_type])) {
       return $this->cacheBaseTableRowTemplates[$entity_type];
     }
 
-    $column_mapping_reverse = array_flip($this->config[$entity_type]['_entity_definition_keys']);
-
-    $row_templates = [];
-    foreach (static::$entityBaseTableKeys as $table_type) {
-      $table_name = $this->config[$entity_type][$table_type]['name'];
-
-      $row_templates[$table_name] = [];
-      foreach ($this->config[$entity_type][$table_type]['_columns'] as $column) {
-        if (isset($column_mapping_reverse[$column]) && array_key_exists($column_mapping_reverse[$column], static::$baseTableRowData)) {
-          $row_templates[$table_name][$column] = static::$baseTableRowData[$column_mapping_reverse[$column]];
-
-          continue;
-        }
-
-        if (isset(static::$baseTableRowData[$column])) {
-          $row_templates[$table_name][$column] = static::$baseTableRowData[$column];
-
-          continue;
-        }
-
-        $row_templates[$table_name][$column] = NULL;
-      }
-    }
-
-    $this->cacheBaseTableRowTemplates[$entity_type] = $row_templates;
+    $base_entity_tables_plugin = $this->getBaseEntityTablesPlugin($entity_type);
+    $this->cacheBaseTableRowTemplates[$entity_type] = $base_entity_tables_plugin->getBaseTableTemplates();
 
     return $this->cacheBaseTableRowTemplates[$entity_type];
   }
@@ -370,11 +369,36 @@ class ContentCreator {
    *   The bundle type.
    * @param int $num_of_instances
    *   The number of instances for bundle.
+   * @param int $parent_id
+   *   The parent entity id.
+   * @param string $parent_type
+   *   The parent entity type.
+   * @param string $parent_field_name
+   *   The parent field name with references to new created entities.
+   *
+   * @return int
+   *   Returns number of created entities.
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  protected function createBundle($entity_type, $bundle_type, $num_of_instances) {
+  protected function createBundle($entity_type, $bundle_type, $num_of_instances, $parent_id = NULL, $parent_type = NULL, $parent_field_name = NULL) {
+    $unique_bundle_key = $entity_type . '_' . $bundle_type;
+    if (isset($this->entityTypeReferenceNestingStack[$unique_bundle_key])) {
+      return 0;
+    }
+
+    $entity_type_state = [
+      'entity_type' => $entity_type,
+      'bundle_type' => $bundle_type,
+      'parent_id' => $parent_id,
+      'parent_type' => $parent_type,
+      'parent_field_name' => $parent_field_name,
+    ];
+
+    $this->entityTypeReferenceNestingStack[$unique_bundle_key] = $entity_type_state;
+
     $this->initBaseEntityTables($entity_type);
 
     $entity_type_index = $this->globalState['entity_states'][$entity_type]['index'];
@@ -385,6 +409,7 @@ class ContentCreator {
 
     // Prepare row arrays.
     $row_templates = $this->getBaseTableTemplates($entity_type);
+    $this->getBaseEntityTablesPlugin($entity_type)->alterRowTemplate($row_templates, $entity_type_state);
     $variable_row_data = [
       'bundle' => $bundle_type,
     ];
@@ -416,6 +441,10 @@ class ContentCreator {
 
     $this->createBundleFields($entity_type, $bundle_type, $entity_type_total - $num_of_instances, $entity_type_total);
     $this->createEntityReferenceFields($entity_type, $bundle_type, $entity_type_total - $num_of_instances, $entity_type_total);
+
+    unset($this->entityTypeReferenceNestingStack[$unique_bundle_key]);
+
+    return $num_of_instances;
   }
 
   /**
@@ -555,6 +584,7 @@ class ContentCreator {
 
       $field_definitions[] = [
         'type' => $field['field_type'],
+        'field_name' => $field['field_name'],
         'reference_type' => $field['_bundle_info']['reference'],
         'target_type' => $target_entity_type,
         'histogram' => $histogram,
@@ -581,6 +611,7 @@ class ContentCreator {
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
   protected function createEntityReferenceFields($entity_type, $bundle_type, $start_entity_id, $end_entity_id) {
     $referenced_field_definitions = $this->getBundleReferencedFieldDefinitions($entity_type, $bundle_type);
@@ -592,19 +623,22 @@ class ContentCreator {
       $reference_type = $referenced_field_definition['reference_type'];
       $table_name = $referenced_field_definition['table_name'];
       $rev_table_name = $referenced_field_definition['rev_table_name'];
+      $field_name = $referenced_field_definition['field_name'];
       for ($entity_id = $start_entity_id; $entity_id < $end_entity_id; $entity_id++) {
         $target_entity_bundle = $this->getRandomWeighted($this->getEntityBundleInstances($target_entity_type));
 
-        // Block infinite nesting!
-        $unique_bundle_key = $target_entity_type . '_' . $target_entity_bundle;
-        if (isset($this->entityTypeReferenceNestingStack[$unique_bundle_key])) {
+        // Block creation early.
+        if (isset($this->entityTypeReferenceNestingStack[$target_entity_type . '_' . $target_entity_bundle])) {
           continue;
         }
-        $this->entityTypeReferenceNestingStack[$unique_bundle_key] = TRUE;
 
         $this->initBundleState($target_entity_type, $target_entity_bundle);
         $num_of_instances = $this->getRandomWeighted($histogram);
-        $this->createBundle($target_entity_type, $target_entity_bundle, $num_of_instances);
+
+        // In case of recursive nesting, we are not going to add entities.
+        if ($this->createBundle($target_entity_type, $target_entity_bundle, $num_of_instances, $entity_id, $entity_type, $field_name) === 0) {
+          continue;
+        }
 
         $end_target_entity_id = $this->globalState['entity_states'][$target_entity_type]['count'];
         $delta = 0;
@@ -628,8 +662,6 @@ class ContentCreator {
 
           $delta++;
         }
-
-        unset($this->entityTypeReferenceNestingStack[$unique_bundle_key]);
       }
     }
   }
@@ -697,10 +729,10 @@ class ContentCreator {
       $this->database->truncate($table_name)->execute();
     }
 
-    $this->database->query("SET autocommit = 0")->execute();
     foreach ($list_of_tables as $table_name) {
       $csv_file_name = $this->outputDirectory . '/' . $table_name . '.csv';
 
+      $this->database->query("SET autocommit = 0")->execute();
       $import_query = "LOAD DATA INFILE '{$csv_file_name}'" . PHP_EOL .
         "IGNORE INTO TABLE `{$table_name}`" . PHP_EOL .
         "FIELDS TERMINATED BY ','" . PHP_EOL .
@@ -709,8 +741,8 @@ class ContentCreator {
         "IGNORE 1 ROWS;";
 
       $this->database->query($import_query)->execute();
+      $this->database->query("commit")->execute();
     }
-    $this->database->query("commit")->execute();
   }
 
 }

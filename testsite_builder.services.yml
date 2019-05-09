@@ -2,6 +2,9 @@ services:
   testsite_builder.configCreator:
     class: Drupal\testsite_builder\ConfigCreator
     arguments: ['@entity_type.manager', '@plugin.manager.field.field_type']
-  testsite_builder.contentCreator:
+  plugin.manager.base_entity_tables:
+    class: Drupal\testsite_builder\BaseEntityTablesPluginManager
+    parent: default_plugin_manager
+  testsite_builder.content_creator:
     class: Drupal\testsite_builder\ContentCreator
-    arguments: ['@database']
+    arguments: ['@database', '@plugin.manager.base_entity_tables']
