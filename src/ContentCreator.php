@@ -3,6 +3,7 @@
 namespace Drupal\testsite_builder;
 
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Database\Database;
 
 /**
  * Class ContentCreator.
@@ -712,37 +713,145 @@ class ContentCreator {
 
   /**
    * Import generated CSV files into database.
+   *
+   * TODO: Split generate and import into two classes.
    */
   public function importCsvFiles() {
-    // Some performance boost flags.
-    $this->database->query("SET unique_checks = 0")->execute();
-    $this->database->query("SET foreign_key_checks = 0")->execute();
-    $this->database->query("SET sql_log_bin=0")->execute();
+    // We are trying to be nice. (fe. 8 cores -> 6 forks).
+    $number_of_forks = ceil($this->getNumberOfCores() / 1.5);
 
     $list_of_tables = [];
+    $table_pool_size = [];
+    for ($fork_index = 0; $fork_index < $number_of_forks; $fork_index++) {
+      $list_of_tables[$fork_index] = [];
+      $table_pool_size[$fork_index] = 0;
+    }
 
     // Prepare tables for import.
-    foreach (glob($this->outputDirectory . '/*.csv') as $file) {
+    $list_of_files = glob($this->outputDirectory . '/*.csv');
+    // Add randomization to avoid big tables at end.
+    shuffle($list_of_files);
+    foreach ($list_of_files as $file) {
       $table_name = basename($file, ".csv");
 
-      $list_of_tables[] = $table_name;
+      $csv_file_name = $this->outputDirectory . '/' . $table_name . '.csv';
+      $file_size = filesize($csv_file_name);
+
+      // Distribute tables based on file size.
+      // TODO: Check if distribution can be improved, filesize works for now.
+      $pool_index = array_keys($table_pool_size, min($table_pool_size))[0];
+      $list_of_tables[$pool_index][] = $table_name;
+      $table_pool_size[$pool_index] += $file_size;
+
       $this->database->truncate($table_name)->execute();
     }
 
-    foreach ($list_of_tables as $table_name) {
-      $csv_file_name = $this->outputDirectory . '/' . $table_name . '.csv';
+    // Best performance boost for table imports is made by parallel imports.
+    $children_pids = [];
+    for ($fork_index = 0; $fork_index < $number_of_forks; $fork_index++) {
+      switch ($pid = pcntl_fork()) {
+        case -1:
+          echo "FORK: Fork failed" . PHP_EOL;
+          break;
 
-      $this->database->query("SET autocommit = 0")->execute();
-      $import_query = "LOAD DATA INFILE '{$csv_file_name}'" . PHP_EOL .
-        "IGNORE INTO TABLE `{$table_name}`" . PHP_EOL .
-        "FIELDS TERMINATED BY ','" . PHP_EOL .
-        "ENCLOSED BY '\"'" . PHP_EOL .
-        "LINES TERMINATED BY '\n'" . PHP_EOL .
-        "IGNORE 1 ROWS;";
+        case 0:
+          echo "FORK: Child #{$fork_index} is starting MySQL import..." . PHP_EOL;
 
-      $this->database->query($import_query)->execute();
-      $this->database->query("commit")->execute();
+          $db_conn = $this->getPdoConnection();
+
+          // Some performance boost flags.
+          $db_conn->query("SET unique_checks=0")->execute();
+          $db_conn->query("SET foreign_key_checks=0")->execute();
+          $db_conn->query("SET sql_log_bin=0")->execute();
+
+          // Import tables distributed to this fork.
+          foreach ($list_of_tables[$fork_index] as $table_name) {
+            echo "FORK: Child #{$fork_index} importing: " . $table_name . PHP_EOL;
+
+            $csv_file_name = $this->outputDirectory . '/' . $table_name . '.csv';
+            $db_conn->query("SET autocommit = 0")->execute();
+            $import_query = "LOAD DATA INFILE '{$csv_file_name}'" . PHP_EOL .
+              "IGNORE INTO TABLE `{$table_name}`" . PHP_EOL .
+              "FIELDS TERMINATED BY ','" . PHP_EOL .
+              "ENCLOSED BY '\"'" . PHP_EOL .
+              "LINES TERMINATED BY '\n'" . PHP_EOL .
+              "IGNORE 1 ROWS;";
+
+            $db_conn->query($import_query)->execute();
+            $db_conn->query("commit")->execute();
+          }
+
+          // We have to exit from child process here!
+          // TODO: "return" statement would lead to multiple console outputs.
+          exit(0);
+
+        default:
+          // For parent fork, we are collecting children.
+          $children_pids[$fork_index] = $pid;
+
+          break;
+      }
     }
+
+    while (!empty($children_pids)) {
+      echo "FORK: Parent, waiting for children to finish their jobs..." . PHP_EOL;
+      sleep(5);
+
+      foreach ($children_pids as $fork_index => $pid) {
+        $status = NULL;
+        $wait_result = pcntl_waitpid($pid, $status, WNOHANG);
+
+        if ($wait_result == -1 || $wait_result > 0) {
+          echo "FORK: Parent, child {$fork_index} has finished." . PHP_EOL;
+          unset($children_pids[$fork_index]);
+        }
+      }
+    }
+  }
+
+  /**
+   * Get number of cores on machine.
+   *
+   * @return int
+   *   Returns number of cores.
+   */
+  protected function getNumberOfCores() {
+    if (is_file('/proc/cpuinfo')) {
+      $cpu_info = file_get_contents('/proc/cpuinfo');
+      preg_match_all('/^processor/m', $cpu_info, $matches);
+
+      return count($matches[0]);
+    }
+
+    $process = @popen('sysctl -a', 'rb');
+    if ($process) {
+      $output = stream_get_contents($process);
+      preg_match('/hw.ncpu: (\d+)/', $output, $matches);
+      pclose($process);
+
+      if ($matches) {
+        return intval($matches[1][0]);
+      }
+    }
+
+    return 1;
+  }
+
+  /**
+   * Get PDO connection.
+   *
+   * It's required for forked mysql execution.
+   *
+   * @return \PDO
+   *   Returns PDO database connection.
+   */
+  protected function getPdoConnection() {
+    $connection_info = Database::getConnectionInfo('default')['default'];
+
+    $namespace = (isset($connection_info['namespace'])) ? $connection_info['namespace'] : 'Drupal\\Core\\Database\\Driver\\' . $connection_info['driver'];
+    $driver_class = $namespace . '\\Connection';
+
+    return $driver_class::open($connection_info);
   }
 
 }
