@@ -4,7 +4,6 @@ namespace Drupal\testsite_builder;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Field\FieldTypePluginManagerInterface;
 
 /**
  * The ConfigCreator class.
@@ -28,16 +27,16 @@ class ConfigCreator {
   protected $entityTypeManager;
 
   /**
-   * The field type plugin manager service.
+   * The field type manager service.
    *
-   * @var \Drupal\Core\Field\FieldTypePluginManagerInterface
+   * @var \Drupal\testsite_builder\FieldTypePluginManager
    */
   protected $fieldTypePluginManager;
 
   /**
    * Constructs a new ConfigCreator object.
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManagerInterface $fieldTypePluginManager) {
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager) {
     $this->entityTypeManager = $entityTypeManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
   }
@@ -104,11 +103,8 @@ class ConfigCreator {
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function create(): ConfigCreator {
-    $fieldTypeDefinitions = $this->fieldTypePluginManager->getDefinitions();
-
     foreach ($this->getEntityTypes() as $entity_type) {
       $entity_definition = $this->entityTypeManager->getDefinition($entity_type);
-      $createdFields = [];
       if (!isset($this->reportData[$entity_type]['bundle'])) {
         continue;
       }
@@ -122,68 +118,18 @@ class ConfigCreator {
         ]);
         $bundle_entity->save();
 
-        $form_display = entity_get_form_display($entity_type, $bundle_entity->id(), 'default');
-
         // Create fields.
-        foreach ($bundle['fields'] as $field_type => $count) {
-          if (!isset($fieldTypeDefinitions[$field_type])) {
-            continue;
-          }
+        foreach ($bundle['fields'] as $field_type => $field_instances) {
+          $configuration = [
+            'field_type' => $field_type,
+            'entity_type' => $entity_type,
+            'bundle_type' => $bundle_entity->id(),
+          ];
+          /** @var \Drupal\testsite_builder\FieldTypeInterface $testbuilder_field_type */
+          $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_type, $configuration + ['instances' => $field_instances]);
 
-          if (in_array($field_type, ['entity_reference', 'entity_reference_revisions'])) {
-            $field_settings = $count;
-            $count = count($field_settings);
-          }
-
-          for ($i = 0; $i < $count; $i++) {
-            $fieldName = $field_type . '_' . $i;
-            if (!in_array($fieldName, $createdFields)) {
-              $field_storage_config = [
-                'field_name' => $fieldName,
-                'entity_type' => $entity_type,
-                'type' => $field_type,
-                'settings' => [],
-              ];
-
-              switch ($field_type) {
-                case 'entity_reference_revisions':
-                case 'entity_reference':
-                  $field_storage_config['settings']['target_type'] = $field_settings[$i]['target_type'];
-                  $field_storage_config['cardinality'] = $field_settings[$i]['cardinality'];
-                  break;
-              }
-
-              /** @var \Drupal\field\FieldStorageConfigInterface $field_storage */
-              $field_storage = $this->entityTypeManager->getStorage('field_storage_config')->create($field_storage_config);
-              $field_storage->save();
-              $createdFields[] = $fieldName;
-            }
-
-            $field_instance_config = [
-              'field_name' => $fieldName,
-              'entity_type' => $entity_type,
-              'type' => $field_type,
-              'bundle' => $bundle_entity->id(),
-              'settings' => [],
-            ];
-
-            switch ($field_type) {
-              case 'entity_reference_revisions':
-              case 'entity_reference':
-                $field_instance_config['settings']['handler_settings']['target_bundles'] = $field_settings[$i]['target_bundles'];
-                break;
-            }
-
-            /** @var \Drupal\field\FieldConfigInterface $field_instance */
-            $field_instance = $this->entityTypeManager->getStorage('field_config')->create($field_instance_config);
-            $field_instance->save();
-
-            $field_type_definition = $this->fieldTypePluginManager->getDefinition($field_instance->getFieldStorageDefinition()->getType());
-            $form_display->setComponent($fieldName, ['type' => $field_type_definition['default_widget']]);
-          }
+          $testbuilder_field_type->createFields();
         }
-
-        $form_display->save();
       }
     }
 
