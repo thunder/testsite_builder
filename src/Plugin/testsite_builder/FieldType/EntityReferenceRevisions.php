@@ -2,6 +2,8 @@
 
 namespace Drupal\testsite_builder\Plugin\testsite_builder\FieldType;
 
+use Drupal\field\FieldStorageConfigInterface;
+
 /**
  * Counts base fields of entities.
  *
@@ -12,5 +14,14 @@ namespace Drupal\testsite_builder\Plugin\testsite_builder\FieldType;
  */
 class EntityReferenceRevisions extends EntityReference {
 
+  /**
+   * {@inheritdoc}
+   */
+  protected function getFieldConfig($instance, FieldStorageConfigInterface $fieldStorage) {
+    $config = parent::getFieldConfig($instance, $fieldStorage);
+    $config['settings']['handler'] = 'default:paragraph';
+    $config['settings']['handler_settings']['target_bundles_drag_drop'] = array_combine($instance['target_bundles'], array_fill(0, count($instance['target_bundles']), ['enabled' => 1]));
+    return $config;
+  }
 
 }
