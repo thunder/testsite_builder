@@ -35,6 +35,11 @@ class ConfigCreator {
 
   /**
    * Constructs a new ConfigCreator object.
+   *
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   *   The entity manager service.
+   * @param \Drupal\testsite_builder\FieldTypePluginManager $fieldTypePluginManager
+   *   The field type manager service.
    */
   public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager) {
     $this->entityTypeManager = $entityTypeManager;
@@ -141,8 +146,6 @@ class ConfigCreator {
    *
    * @return array
    *   List of supported entity types.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
   protected function getEntityTypes() : array {
     $existingData = $this->entityTypeManager->getDefinitions();

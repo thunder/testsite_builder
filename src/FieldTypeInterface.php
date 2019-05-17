@@ -5,13 +5,13 @@ namespace Drupal\testsite_builder;
 use Drupal\Component\Plugin\PluginInspectionInterface;
 
 /**
- * Defines an interface for Sampler plugins.
+ * Defines an interface for FieldType plugins.
  */
 interface FieldTypeInterface extends PluginInspectionInterface {
 
   /**
-   * @return mixed
+   * Creates all fields of a specific type.
    */
-  public function createFields();
+  public function createFields() : void;
 
 }

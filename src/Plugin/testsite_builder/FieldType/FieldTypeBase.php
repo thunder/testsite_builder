@@ -35,6 +35,11 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
    */
   protected $fieldTypePluginManager;
 
+  /**
+   * The created field manager service.
+   *
+   * @var \Drupal\testsite_builder\CreatedFieldManager
+   */
   protected $createdFieldManager;
 
   /**
@@ -50,14 +55,14 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) : FieldTypeInterface {
     return new static($configuration, $plugin_id, $plugin_definition, $container->get('entity_type.manager'), $container->get('plugin.manager.field.field_type'), $container->get('testsite_builder.created_field_manager'));
   }
 
   /**
    * {@inheritdoc}
    */
-  public function createFields() {
+  public function createFields() : void {
     $fieldTypeDefinitions = $this->fieldTypePluginManager->getDefinitions();
     if (!isset($fieldTypeDefinitions[$this->configuration['field_type']])) {
       return;
@@ -79,13 +84,22 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
       $field_instance = $this->entityTypeManager->getStorage('field_config')->create($this->getFieldConfig($instance, $field_storage));
       $field_instance->save();
 
-      $form_display->setComponent($field_instance->getName(), ['type' => $fieldTypeDefinitions[$this->configuration['field_type']]['default_widget']]);
+      $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig());
     }
     $form_display->save();
 
   }
 
-  protected function getFieldStorageConfig(array $instance) {
+  /**
+   * Returns the field storage configuration.
+   *
+   * @param array $instance
+   *   Array of instance settings.
+   *
+   * @return array
+   *   Default field storage config.
+   */
+  protected function getFieldStorageConfig(array $instance) : array {
     return [
       'entity_type' => $this->configuration['entity_type'],
       'type' => $this->configuration['field_type'],
@@ -94,7 +108,18 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
     ];
   }
 
-  protected function getFieldConfig(array $instance, FieldStorageConfigInterface $fieldStorage) {
+  /**
+   * Returns the field widget configuration.
+   *
+   * @param array $instance
+   *   Array of instance settings.
+   * @param \Drupal\field\FieldStorageConfigInterface $fieldStorage
+   *   The storage where the new instance belongs to.
+   *
+   * @return array
+   *   Default field config.
+   */
+  protected function getFieldConfig(array $instance, FieldStorageConfigInterface $fieldStorage) : array {
     return [
       'field_name' => $fieldStorage->getName(),
       'entity_type' => $this->configuration['entity_type'],
@@ -102,6 +127,17 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
       'bundle' => $this->configuration['bundle_type'],
       'settings' => [],
     ];
+  }
+
+  /**
+   * Returns the field widget configuration.
+   *
+   * @return array
+   *   Default field widget config.
+   */
+  protected function getFieldWidgetConfig() : array {
+    $fieldTypeDefinitions = $this->fieldTypePluginManager->getDefinitions();
+    return ['type' => $fieldTypeDefinitions[$this->configuration['field_type']]['default_widget']];
   }
 
 }
