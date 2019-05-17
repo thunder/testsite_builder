@@ -27,7 +27,7 @@ class CreatedFieldManager {
    * @return \Drupal\field\FieldStorageConfigInterface
    *   The field storage config.
    */
-  public function getFieldStorage(array $field_storage_config, string $bundle) : FieldStorageConfigInterface {
+  public function getFieldStorage(array $field_storage_config, string $bundle) : ?FieldStorageConfigInterface {
     if (!empty($this->map[serialize($field_storage_config)][$bundle])) {
       return NULL;
     }

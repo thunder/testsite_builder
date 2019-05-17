@@ -4,6 +4,7 @@ namespace Drupal\testsite_builder;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\testsite_builder\Exception\FieldTypeNotSupportedException;
 
 /**
  * The ConfigCreator class.
@@ -32,6 +33,13 @@ class ConfigCreator {
    * @var \Drupal\testsite_builder\FieldTypePluginManager
    */
   protected $fieldTypePluginManager;
+
+  /**
+   * An array of not handled field types.
+   *
+   * @var array
+   */
+  protected $notHandledFieldTypes;
 
   /**
    * Constructs a new ConfigCreator object.
@@ -130,10 +138,14 @@ class ConfigCreator {
             'entity_type' => $entity_type,
             'bundle_type' => $bundle_entity->id(),
           ];
-          /** @var \Drupal\testsite_builder\FieldTypeInterface $testbuilder_field_type */
-          $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_type, $configuration + ['instances' => $field_instances]);
-
-          $testbuilder_field_type->createFields();
+          try {
+            /** @var \Drupal\testsite_builder\FieldTypeInterface $testbuilder_field_type */
+            $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_type, $configuration + ['instances' => $field_instances]);
+            $testbuilder_field_type->createFields();
+          }
+          catch (FieldTypeNotSupportedException $exception) {
+            $this->notHandledFieldTypes[] = $exception->getFieldType();
+          }
         }
       }
     }

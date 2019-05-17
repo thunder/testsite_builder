@@ -63,11 +63,6 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
    * {@inheritdoc}
    */
   public function createFields() : void {
-    $fieldTypeDefinitions = $this->fieldTypePluginManager->getDefinitions();
-    if (!isset($fieldTypeDefinitions[$this->configuration['field_type']])) {
-      return;
-    }
-
     $form_display = entity_get_form_display($this->configuration['entity_type'], $this->configuration['bundle_type'], 'default');
     foreach ($this->configuration['instances'] as $instance) {
 
@@ -87,7 +82,6 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
       $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig());
     }
     $form_display->save();
-
   }
 
   /**
