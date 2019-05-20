@@ -7,7 +7,7 @@ use Drupal\Component\Annotation\Plugin;
 /**
  * Defines a sampler plugin item annotation object.
  *
- * @see \Drupal\testsite_builder\SamplerPluginManager
+ * @see \Drupal\testsite_builder\FieldTypePluginManager
  * @see plugin_api
  *
  * @Annotation
@@ -29,14 +29,5 @@ class FieldType extends Plugin {
    * @ingroup plugin_translatable
    */
   public $label;
-
-  /**
-   * The entity type ID.
-   *
-   * @var string
-   */
-  // phpcs:disable
-  public $entity_type_id;
-  // phpcs:enable
 
 }

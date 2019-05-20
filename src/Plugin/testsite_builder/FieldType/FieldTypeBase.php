@@ -66,6 +66,10 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
     $form_display = entity_get_form_display($this->configuration['entity_type'], $this->configuration['bundle_type'], 'default');
     foreach ($this->configuration['instances'] as $instance) {
 
+      if (!$this->isApplicable($instance)) {
+        continue;
+      }
+
       $field_storage_config = $this->getFieldStorageConfig($instance);
       if (!($field_storage = $this->createdFieldManager->getFieldStorage($field_storage_config, $this->configuration['bundle_type']))) {
         $field_storage_config['field_name'] = $this->createdFieldManager->getFieldStorageName($field_storage_config, $this->configuration['bundle_type']);
@@ -73,6 +77,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
         $field_storage = $this->entityTypeManager->getStorage('field_storage_config')->create($field_storage_config);
         $field_storage->save();
       }
+      unset($field_storage_config['field_name']);
       $this->createdFieldManager->addFieldStorage($field_storage_config, $this->configuration['bundle_type'], $field_storage);
 
       /** @var \Drupal\field\FieldConfigInterface $field_instance */
@@ -82,6 +87,23 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
       $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig());
     }
     $form_display->save();
+  }
+
+  /**
+   * Determines if we can add a field like this.
+   *
+   * @param array $instance
+   *   Array of instance settings.
+   *
+   * @return bool
+   *   TRUE if we can add a new field, otherwise FALSE.
+   */
+  protected function isApplicable(array $instance) : bool {
+    $fieldTypeDefinitions = $this->fieldTypePluginManager->getDefinitions();
+    if (!isset($fieldTypeDefinitions[$this->configuration['field_type']])) {
+      return FALSE;
+    }
+    return TRUE;
   }
 
   /**

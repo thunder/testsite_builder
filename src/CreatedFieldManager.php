@@ -2,6 +2,8 @@
 
 namespace Drupal\testsite_builder;
 
+use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\field\FieldStorageConfigInterface;
 
 /**
@@ -17,6 +19,23 @@ class CreatedFieldManager {
   protected $map;
 
   /**
+   * The entity field manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  protected $entityFieldManager;
+
+  /**
+   * CreatedFieldManager constructor.
+   *
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
+   *   The entity field manager service.
+   */
+  public function __construct(EntityFieldManagerInterface $entityFieldManager) {
+    $this->entityFieldManager = $entityFieldManager;
+  }
+
+  /**
    * Returns an existing field storage when not used in the given bundle so far.
    *
    * @param array $field_storage_config
@@ -28,11 +47,11 @@ class CreatedFieldManager {
    *   The field storage config.
    */
   public function getFieldStorage(array $field_storage_config, string $bundle) : ?FieldStorageConfigInterface {
-    if (!empty($this->map[serialize($field_storage_config)][$bundle])) {
+    if (!empty($this->map[$this->getHash($field_storage_config)][$bundle])) {
       return NULL;
     }
-    if (!empty($this->map[serialize($field_storage_config)])) {
-      return current($this->map[serialize($field_storage_config)]);
+    if (!empty($this->map[$this->getHash($field_storage_config)])) {
+      return current($this->map[$this->getHash($field_storage_config)]);
     }
     return NULL;
   }
@@ -47,9 +66,7 @@ class CreatedFieldManager {
    *   The new field name
    */
   public function getFieldStorageName(array $field_storage_config) : string {
-    /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $fieldManager */
-    $fieldManager = \Drupal::service('entity_field.manager');
-    $defs = $fieldManager->getFieldMapByFieldType($field_storage_config['type']);
+    $defs = $this->entityFieldManager->getFieldMapByFieldType($field_storage_config['type']);
     $defs = array_filter($defs[$field_storage_config['entity_type']], function ($key) use ($field_storage_config) {
       return (strpos($key, $field_storage_config['type']) === 0);
     }, ARRAY_FILTER_USE_KEY);
@@ -68,8 +85,20 @@ class CreatedFieldManager {
    *   The field storage config object.
    */
   public function addFieldStorage(array $field_storage_config, $bundle, FieldStorageConfigInterface $fieldStorageConfig) : void {
-    unset($field_storage_config['field_name']);
-    $this->map[serialize($field_storage_config)][$bundle] = $fieldStorageConfig;
+    $this->map[$this->getHash($field_storage_config)][$bundle] = $fieldStorageConfig;
+  }
+
+  /**
+   * Calculates the hash for the map.
+   *
+   * @param array $field_storage_config
+   *   The field storage config.
+   *
+   * @return string
+   *   The hash.
+   */
+  protected function getHash(array $field_storage_config) : string {
+    return Crypt::hashBase64(serialize($field_storage_config));
   }
 
 }
