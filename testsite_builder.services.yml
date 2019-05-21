@@ -1,7 +1,7 @@
 services:
   testsite_builder.configCreator:
     class: Drupal\testsite_builder\ConfigCreator
-    arguments: ['@entity_type.manager', '@plugin.manager.field_type_manager']
+    arguments: ['@entity_type.manager', '@plugin.manager.field_type_manager', '@plugin.manager.entity_type_manager']
 
   testsite_builder.created_field_manager:
     class: Drupal\testsite_builder\CreatedFieldManager
@@ -9,4 +9,8 @@ services:
 
   plugin.manager.field_type_manager:
     class: Drupal\testsite_builder\FieldTypePluginManager
+    parent: default_plugin_manager
+
+  plugin.manager.entity_type_manager:
+    class: Drupal\testsite_builder\EntityTypePluginManager
     parent: default_plugin_manager

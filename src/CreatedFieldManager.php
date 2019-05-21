@@ -20,7 +20,7 @@ class CreatedFieldManager {
   /**
    * Counts the value of field type fields on an entity type.
    *
-   * @var int
+   * @var array
    */
   protected $fieldCounter;
 
@@ -36,11 +36,12 @@ class CreatedFieldManager {
    *   The field storage config.
    */
   public function getFieldStorage(array $field_storage_config, string $bundle) : ?FieldStorageConfigInterface {
-    if (!empty($this->createFields[$this->getHash($field_storage_config)][$bundle])) {
+    $hash = $this->getHash($field_storage_config);
+    if (!empty($this->createFields[$hash][$bundle])) {
       return NULL;
     }
-    if (!empty($this->createFields[$this->getHash($field_storage_config)])) {
-      return current($this->createFields[$this->getHash($field_storage_config)]);
+    if (!empty($this->createFields[$hash])) {
+      return current($this->createFields[$hash]);
     }
     return NULL;
   }
@@ -71,6 +72,9 @@ class CreatedFieldManager {
    */
   public function addFieldStorage(array $field_storage_config, $bundle, FieldStorageConfigInterface $fieldStorageConfig) : void {
     $this->createFields[$this->getHash($field_storage_config)][$bundle] = $fieldStorageConfig;
+    if (!isset($this->fieldCounter[$field_storage_config['entity_type']][$field_storage_config['type']])) {
+      $this->fieldCounter[$field_storage_config['entity_type']][$field_storage_config['type']] = 0;
+    }
     $this->fieldCounter[$field_storage_config['entity_type']][$field_storage_config['type']]++;
   }
 

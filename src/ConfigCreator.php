@@ -34,16 +34,26 @@ class ConfigCreator {
   protected $fieldTypePluginManager;
 
   /**
+   * The entity type manager service.
+   *
+   * @var \Drupal\testsite_builder\EntityTypePluginManager
+   */
+  protected $entityTypePluginManager;
+
+  /**
    * Constructs a new ConfigCreator object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity manager service.
    * @param \Drupal\testsite_builder\FieldTypePluginManager $fieldTypePluginManager
    *   The field type manager service.
+   * @param \Drupal\testsite_builder\EntityTypePluginManager $entityTypePluginManager
+   *   The entity type manager service.
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager) {
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager) {
     $this->entityTypeManager = $entityTypeManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
+    $this->entityTypePluginManager = $entityTypePluginManager;
   }
 
   /**
@@ -80,16 +90,22 @@ class ConfigCreator {
         $entities = $this->entityTypeManager->getStorage($entity_type)->loadMultiple();
         $this->entityTypeManager->getStorage($entity_type)->delete($entities);
 
-        // Delete all bundles.
-        $bundles = $this->entityTypeManager->getStorage($definition->getBundleEntityType())->loadMultiple();
-        $this->entityTypeManager->getStorage($definition->getBundleEntityType())->delete($bundles);
-
         // Delete fields.
         $entities = $this->entityTypeManager->getStorage('field_config')->loadByProperties(['entity_type' => $entity_type]);
         $this->entityTypeManager->getStorage('field_config')->delete($entities);
 
         $entities = $this->entityTypeManager->getStorage('field_storage_config')->loadByProperties(['entity_type' => $entity_type]);
         $this->entityTypeManager->getStorage('field_storage_config')->delete($entities);
+      }
+    }
+
+    foreach ($this->getEntityTypes() as $entity_type) {
+      $definition = $this->entityTypeManager->getDefinition($entity_type);
+
+      if ($definition->getBundleEntityType()) {
+        // Delete all bundles.
+        $bundles = $this->entityTypeManager->getStorage($definition->getBundleEntityType())->loadMultiple();
+        $this->entityTypeManager->getStorage($definition->getBundleEntityType())->delete($bundles);
       }
     }
 
@@ -102,39 +118,25 @@ class ConfigCreator {
    * @return \Drupal\testsite_builder\ConfigCreator
    *   This class.
    *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
-   * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function create(): ConfigCreator {
     foreach ($this->getEntityTypes() as $entity_type) {
-      $entity_definition = $this->entityTypeManager->getDefinition($entity_type);
       if (!isset($this->reportData[$entity_type]['bundle'])) {
         continue;
       }
-      foreach ($this->reportData[$entity_type]['bundle'] as $id => $bundle) {
-        $bundle_definition = $this->entityTypeManager->getDefinition($entity_definition->getBundleEntityType());
 
+      $configuration = ['entity_type' => $entity_type];
+      /** @var \Drupal\testsite_builder\EntityTypeInterface $testbuilder_entity_type */
+      $testbuilder_entity_type = $this->entityTypePluginManager->createInstance($entity_type, ['entity_type' => $entity_type]);
+      foreach ($this->reportData[$entity_type]['bundle'] as $id => $bundle_config) {
         // Create bundle.
-        $bundle_entity = $this->entityTypeManager->getStorage($entity_definition->getBundleEntityType())->create([
-          $bundle_definition->getKey('id') => $id,
-          $bundle_definition->getKey('label') => $id,
-        ]);
-        $bundle_entity->save();
-
-        $configuration = [
-          'entity_type' => $entity_type,
-          'bundle_type' => $bundle_entity->id(),
-        ];
+        $bundle_entity = $testbuilder_entity_type->createBundle($id, $bundle_config);
+        $configuration['bundle_type'] = $bundle_entity->id();
         // Create fields.
-        foreach ($bundle['fields'] as $field_type => $field_instances) {
-          $configuration += [
-            'field_type' => $field_type,
-            'instances' => $field_instances,
-          ];
+        foreach ($bundle_config['fields'] as $field_type => $field_instances) {
           /** @var \Drupal\testsite_builder\FieldTypeInterface $testbuilder_field_type */
-          $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_type, $configuration);
+          $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_type, $configuration + ['field_type' => $field_type, 'instances' => $field_instances]);
           $testbuilder_field_type->createFields();
         }
       }
