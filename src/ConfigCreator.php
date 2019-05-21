@@ -34,13 +34,6 @@ class ConfigCreator {
   protected $fieldTypePluginManager;
 
   /**
-   * An array of not handled field types.
-   *
-   * @var array
-   */
-  protected $notHandledFieldTypes;
-
-  /**
    * Constructs a new ConfigCreator object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager

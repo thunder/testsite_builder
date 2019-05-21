@@ -3,7 +3,6 @@
 namespace Drupal\testsite_builder;
 
 use Drupal\Component\Utility\Crypt;
-use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\field\FieldStorageConfigInterface;
 
 /**
@@ -16,24 +15,14 @@ class CreatedFieldManager {
    *
    * @var array
    */
-  protected $map;
+  protected $createFields;
 
   /**
-   * The entity field manager service.
+   * Counts the value of field type fields on an entity type.
    *
-   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   * @var int
    */
-  protected $entityFieldManager;
-
-  /**
-   * CreatedFieldManager constructor.
-   *
-   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
-   *   The entity field manager service.
-   */
-  public function __construct(EntityFieldManagerInterface $entityFieldManager) {
-    $this->entityFieldManager = $entityFieldManager;
-  }
+  protected $fieldCounter;
 
   /**
    * Returns an existing field storage when not used in the given bundle so far.
@@ -47,11 +36,11 @@ class CreatedFieldManager {
    *   The field storage config.
    */
   public function getFieldStorage(array $field_storage_config, string $bundle) : ?FieldStorageConfigInterface {
-    if (!empty($this->map[$this->getHash($field_storage_config)][$bundle])) {
+    if (!empty($this->createFields[$this->getHash($field_storage_config)][$bundle])) {
       return NULL;
     }
-    if (!empty($this->map[$this->getHash($field_storage_config)])) {
-      return current($this->map[$this->getHash($field_storage_config)]);
+    if (!empty($this->createFields[$this->getHash($field_storage_config)])) {
+      return current($this->createFields[$this->getHash($field_storage_config)]);
     }
     return NULL;
   }
@@ -66,12 +55,8 @@ class CreatedFieldManager {
    *   The new field name
    */
   public function getFieldStorageName(array $field_storage_config) : string {
-    $defs = $this->entityFieldManager->getFieldMapByFieldType($field_storage_config['type']);
-    $defs = array_filter($defs[$field_storage_config['entity_type']], function ($key) use ($field_storage_config) {
-      return (strpos($key, $field_storage_config['type']) === 0);
-    }, ARRAY_FILTER_USE_KEY);
-
-    return $field_storage_config['type'] . '_' . count($defs);
+    $count = $this->fieldCounter[$field_storage_config['entity_type']][$field_storage_config['type']] ?? 0;
+    return $field_storage_config['type'] . '_' . $count;
   }
 
   /**
@@ -85,7 +70,8 @@ class CreatedFieldManager {
    *   The field storage config object.
    */
   public function addFieldStorage(array $field_storage_config, $bundle, FieldStorageConfigInterface $fieldStorageConfig) : void {
-    $this->map[$this->getHash($field_storage_config)][$bundle] = $fieldStorageConfig;
+    $this->createFields[$this->getHash($field_storage_config)][$bundle] = $fieldStorageConfig;
+    $this->fieldCounter[$field_storage_config['entity_type']][$field_storage_config['type']]++;
   }
 
   /**
