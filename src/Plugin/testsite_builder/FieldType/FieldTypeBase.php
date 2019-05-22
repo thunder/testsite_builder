@@ -76,8 +76,8 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
         /** @var \Drupal\field\FieldStorageConfigInterface $field_storage */
         $field_storage = $this->entityTypeManager->getStorage('field_storage_config')->create($field_storage_config);
         $field_storage->save();
+        unset($field_storage_config['field_name']);
       }
-      unset($field_storage_config['field_name']);
       $this->createdFieldManager->addFieldStorage($field_storage_config, $this->configuration['bundle_type'], $field_storage);
 
       /** @var \Drupal\field\FieldConfigInterface $field_instance */

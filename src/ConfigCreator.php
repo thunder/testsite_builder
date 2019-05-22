@@ -84,8 +84,8 @@ class ConfigCreator {
   public function cleanup() : ConfigCreator {
     foreach ($this->getEntityTypes() as $entity_type) {
       $definition = $this->entityTypeManager->getDefinition($entity_type);
-
-      if ($definition->getBundleEntityType()) {
+      $bundleEntityType = $definition->getBundleEntityType();
+      if ($bundleEntityType) {
         // Delete all entities.
         $entities = $this->entityTypeManager->getStorage($entity_type)->loadMultiple();
         $this->entityTypeManager->getStorage($entity_type)->delete($entities);
@@ -101,11 +101,11 @@ class ConfigCreator {
 
     foreach ($this->getEntityTypes() as $entity_type) {
       $definition = $this->entityTypeManager->getDefinition($entity_type);
-
-      if ($definition->getBundleEntityType()) {
+      $bundleEntityType = $definition->getBundleEntityType();
+      if ($bundleEntityType) {
         // Delete all bundles.
-        $bundles = $this->entityTypeManager->getStorage($definition->getBundleEntityType())->loadMultiple();
-        $this->entityTypeManager->getStorage($definition->getBundleEntityType())->delete($bundles);
+        $bundles = $this->entityTypeManager->getStorage($bundleEntityType)->loadMultiple();
+        $this->entityTypeManager->getStorage($bundleEntityType)->delete($bundles);
       }
     }
 
@@ -129,10 +129,10 @@ class ConfigCreator {
       $configuration = ['entity_type' => $entity_type];
       /** @var \Drupal\testsite_builder\EntityTypeInterface $testbuilder_entity_type */
       $testbuilder_entity_type = $this->entityTypePluginManager->createInstance($entity_type, ['entity_type' => $entity_type]);
-      foreach ($this->reportData[$entity_type]['bundle'] as $id => $bundle_config) {
+      foreach ($this->reportData[$entity_type]['bundle'] as $bundle_id => $bundle_config) {
         // Create bundle.
-        $bundle_entity = $testbuilder_entity_type->createBundle($id, $bundle_config);
-        $configuration['bundle_type'] = $bundle_entity->id();
+        $testbuilder_entity_type->createBundle($bundle_id, $bundle_config);
+        $configuration['bundle_type'] = $bundle_id;
         // Create fields.
         foreach ($bundle_config['fields'] as $field_type => $field_instances) {
           /** @var \Drupal\testsite_builder\FieldTypeInterface $testbuilder_field_type */
