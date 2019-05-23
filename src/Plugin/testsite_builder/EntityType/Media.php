@@ -37,7 +37,7 @@ class Media extends EntityTypeBase {
    * @param \Drupal\media\MediaSourceManager $mediaSourceManager
    *   The media source manager.
    */
-  public function setMediaSourceManager(MediaSourceManager $mediaSourceManager): void {
+  protected function setMediaSourceManager(MediaSourceManager $mediaSourceManager): void {
     $this->mediaSourceManager = $mediaSourceManager;
   }
 
