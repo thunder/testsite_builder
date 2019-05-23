@@ -6,6 +6,7 @@ use Drupal\Component\Plugin\PluginBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\Serialization\Yaml;
 use Drupal\field\FieldStorageConfigInterface;
 use Drupal\testsite_builder\CreatedFieldManager;
 use Drupal\testsite_builder\FieldTypeInterface;
@@ -42,6 +43,8 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
    */
   protected $createdFieldManager;
 
+  protected $widgetMapping;
+
   /**
    * {@inheritdoc}
    */
@@ -50,6 +53,9 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
     $this->entityTypeManager = $entityTypeManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
     $this->createdFieldManager = $createdFieldManager;
+
+    $module_path = drupal_get_path('module', 'testsite_builder');
+    $this->widgetMapping = Yaml::decode(file_get_contents($module_path . DIRECTORY_SEPARATOR . 'widget_mapping.yml'));
   }
 
   /**
@@ -84,7 +90,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
       $field_instance = $this->entityTypeManager->getStorage('field_config')->create($this->getFieldConfig($instance, $field_storage));
       $field_instance->save();
 
-      $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig());
+      $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig($instance));
     }
     $form_display->save();
   }
@@ -148,12 +154,48 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   /**
    * Returns the field widget configuration.
    *
+   * @param array $instance
+   *   Array of instance settings.
+   *
    * @return array
    *   Default field widget config.
    */
-  protected function getFieldWidgetConfig() : array {
+  protected function getFieldWidgetConfig(array $instance) : array {
+    if (!empty($this->widgetMapping[$this->configuration['field_type']])) {
+      foreach ($this->widgetMapping[$this->configuration['field_type']] as $mapping) {
+        $match = TRUE;
+        foreach ($mapping['conditions'] as $key => $value) {
+          if (!isset($instance[$key]) || $instance[$key] != $value) {
+            $match = FALSE;
+          }
+        }
+        if ($match) {
+          $config = $mapping['config'];
+          return $this->getWidget($config['entity_type'], $config['bundle'], $config['view_mode'], $config['field']);
+        }
+      }
+    }
+
     $fieldTypeDefinitions = $this->fieldTypePluginManager->getDefinitions();
     return ['type' => $fieldTypeDefinitions[$this->configuration['field_type']]['default_widget']];
+  }
+
+  /**
+   * @param $entity_type
+   * @param $bundle
+   * @param $form_mode
+   * @param $field_name
+   *
+   * @return mixed
+   */
+  protected function getWidget($entity_type, $bundle, $form_mode, $field_name) {
+
+    /** @var \Drupal\config_update\ConfigReverter $config */
+    $config = \Drupal::service('config_update.config_update');
+
+    $display = $config->getFromExtension('entity_form_display', sprintf('%s.%s.%s', $entity_type, $bundle, $form_mode));
+
+    return $display['content'][$field_name];
   }
 
 }

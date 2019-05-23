@@ -26,7 +26,7 @@ class EntityReference extends FieldTypeBase {
   /**
    * {@inheritdoc}
    */
-  protected function getFieldConfig($instance, FieldStorageConfigInterface $fieldStorage) : array {
+  protected function getFieldConfig(array $instance, FieldStorageConfigInterface $fieldStorage) : array {
     $config = parent::getFieldConfig($instance, $fieldStorage);
     $config['settings']['handler_settings']['target_bundles'] = array_combine($instance['target_bundles'], $instance['target_bundles']);
     return $config;

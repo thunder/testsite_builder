@@ -1,0 +1,9 @@
+entity_reference_revisions:
+  -
+    conditions:
+      target_type: paragraph
+    config:
+      entity_type: node
+      bundle: article
+      view_mode: default
+      field: field_paragraphs
