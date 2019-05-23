@@ -130,6 +130,9 @@ class ConfigCreator {
       /** @var \Drupal\testsite_builder\EntityTypeInterface $testbuilder_entity_type */
       $testbuilder_entity_type = $this->entityTypePluginManager->createInstance($entity_type, ['entity_type' => $entity_type]);
       foreach ($this->reportData[$entity_type]['bundle'] as $bundle_id => $bundle_config) {
+        if (!$testbuilder_entity_type->isApplicable($bundle_config)) {
+          continue;
+        }
         // Create bundle.
         $testbuilder_entity_type->createBundle($bundle_id, $bundle_config);
         $configuration['bundle_type'] = $bundle_id;

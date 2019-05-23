@@ -76,4 +76,11 @@ class EntityTypeBase extends PluginBase implements EntityTypeInterface, Containe
     ];
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function isApplicable(array $bundle_config) : bool {
+    return TRUE;
+  }
+
 }

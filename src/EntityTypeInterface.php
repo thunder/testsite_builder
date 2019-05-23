@@ -23,4 +23,15 @@ interface EntityTypeInterface extends PluginInspectionInterface {
    */
   public function createBundle(string $bundle_id, array $bundle_config): ConfigEntityBundleBase;
 
+  /**
+   * Determines if we can create a bundle like this.
+   *
+   * @param array $bundle_config
+   *   Additional bundle config.
+   *
+   * @return bool
+   *   TRUE if we can create a bundle, otherwise FALSE.
+   */
+  public function isApplicable(array $bundle_config) : bool;
+
 }
