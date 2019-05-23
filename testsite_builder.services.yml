@@ -1,5 +1,5 @@
 services:
-  testsite_builder.configCreator:
+  testsite_builder.config_creator:
     class: Drupal\testsite_builder\ConfigCreator
     arguments: ['@entity_type.manager', '@plugin.manager.field_type_manager', '@plugin.manager.entity_type_manager']
 
