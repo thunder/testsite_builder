@@ -7,3 +7,23 @@ entity_reference_revisions:
       bundle: article
       view_mode: default
       field: field_paragraphs
+entity_reference:
+  -
+    conditions:
+      target_type: media
+      cardinality: 1
+      entity_type: paragraph
+    config:
+      entity_type: paragraph
+      bundle: pinterest
+      view_mode: default
+      field: field_media
+  -
+    conditions:
+      target_type: media
+      cardinality: 1
+    config:
+      entity_type: node
+      bundle: article
+      view_mode: default
+      field: field_teaser_media

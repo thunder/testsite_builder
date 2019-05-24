@@ -3,6 +3,7 @@
 namespace Drupal\testsite_builder\Plugin\testsite_builder\FieldType;
 
 use Drupal\Component\Plugin\PluginBase;
+use Drupal\config_update\ConfigRevertInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -43,16 +44,29 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
    */
   protected $createdFieldManager;
 
-  protected $widgetMapping;
+  /**
+   * The config reverter service.
+   *
+   * @var \Drupal\config_update\ConfigRevertInterface
+   */
+  protected $configReverter;
+
+  /**
+   * Stores the widget mapping.
+   *
+   * @var array
+   */
+  protected $widgetMapping = [];
 
   /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManagerInterface $fieldTypePluginManager, CreatedFieldManager $createdFieldManager) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManagerInterface $fieldTypePluginManager, CreatedFieldManager $createdFieldManager, ConfigRevertInterface $configReverter) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityTypeManager = $entityTypeManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
     $this->createdFieldManager = $createdFieldManager;
+    $this->configReverter = $configReverter;
 
     $module_path = drupal_get_path('module', 'testsite_builder');
     $this->widgetMapping = Yaml::decode(file_get_contents($module_path . DIRECTORY_SEPARATOR . 'widget_mapping.yml'));
@@ -62,7 +76,15 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) : FieldTypeInterface {
-    return new static($configuration, $plugin_id, $plugin_definition, $container->get('entity_type.manager'), $container->get('plugin.manager.field.field_type'), $container->get('testsite_builder.created_field_manager'));
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('entity_type.manager'),
+      $container->get('plugin.manager.field.field_type'),
+      $container->get('testsite_builder.created_field_manager'),
+      $container->get('config_update.config_update')
+    );
   }
 
   /**
@@ -90,7 +112,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
       $field_instance = $this->entityTypeManager->getStorage('field_config')->create($this->getFieldConfig($instance, $field_storage));
       $field_instance->save();
 
-      $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig($instance));
+      $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig($instance + ['entity_type' => $this->configuration['entity_type']]));
     }
     $form_display->save();
   }
@@ -181,21 +203,24 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   }
 
   /**
-   * @param $entity_type
-   * @param $bundle
-   * @param $form_mode
-   * @param $field_name
+   * Read widget setting from config file.
    *
-   * @return mixed
+   * @param string $entity_type
+   *   The entity type.
+   * @param string $bundle
+   *   The entity bundle.
+   * @param string $form_mode
+   *   The form mode.
+   * @param string $field_name
+   *   The field name.
+   *
+   * @return array|null
+   *   The widget config array.
    */
-  protected function getWidget($entity_type, $bundle, $form_mode, $field_name) {
+  protected function getWidget(string $entity_type, string $bundle, string $form_mode, string $field_name) : ?array {
+    $display = $this->configReverter->getFromExtension('entity_form_display', sprintf('%s.%s.%s', $entity_type, $bundle, $form_mode));
 
-    /** @var \Drupal\config_update\ConfigReverter $config */
-    $config = \Drupal::service('config_update.config_update');
-
-    $display = $config->getFromExtension('entity_form_display', sprintf('%s.%s.%s', $entity_type, $bundle, $form_mode));
-
-    return $display['content'][$field_name];
+    return $display['content'][$field_name] ?? NULL;
   }
 
 }
