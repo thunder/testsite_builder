@@ -12,6 +12,14 @@ interface FieldTypeInterface extends PluginInspectionInterface {
   /**
    * Creates all fields of a specific type.
    */
-  public function createFields() : void;
+  public function createField() : void;
+
+  /**
+   * Determines if we can add a field like this.
+   *
+   * @return bool
+   *   TRUE if we can add a new field, otherwise FALSE.
+   */
+  public function isApplicable() : bool;
 
 }
