@@ -90,45 +90,34 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   /**
    * {@inheritdoc}
    */
-  public function createFields() : void {
+  public function createField() : void {
     $form_display = entity_get_form_display($this->configuration['entity_type'], $this->configuration['bundle_type'], 'default');
-    foreach ($this->configuration['instances'] as $instance) {
 
-      if (!$this->isApplicable($instance)) {
-        continue;
-      }
-
-      $field_storage_config = $this->getFieldStorageConfig($instance);
-      if (!($field_storage = $this->createdFieldManager->getFieldStorage($field_storage_config, $this->configuration['bundle_type']))) {
-        $field_storage_config['field_name'] = $this->createdFieldManager->getFieldStorageName($field_storage_config, $this->configuration['bundle_type']);
-        /** @var \Drupal\field\FieldStorageConfigInterface $field_storage */
-        $field_storage = $this->entityTypeManager->getStorage('field_storage_config')->create($field_storage_config);
-        $field_storage->save();
-        unset($field_storage_config['field_name']);
-      }
-      $this->createdFieldManager->addFieldStorage($field_storage_config, $this->configuration['bundle_type'], $field_storage);
-
-      /** @var \Drupal\field\FieldConfigInterface $field_instance */
-      $field_instance = $this->entityTypeManager->getStorage('field_config')->create($this->getFieldConfig($instance, $field_storage));
-      $field_instance->save();
-
-      $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig($instance + ['entity_type' => $this->configuration['entity_type']]));
+    $field_storage_config = $this->getFieldStorageConfig($this->configuration);
+    if (!($field_storage = $this->createdFieldManager->getFieldStorage($field_storage_config, $this->configuration['bundle_type']))) {
+      $field_storage_config['field_name'] = $this->createdFieldManager->getFieldStorageName($field_storage_config, $this->configuration['bundle_type']);
+      /** @var \Drupal\field\FieldStorageConfigInterface $field_storage */
+      $field_storage = $this->entityTypeManager->getStorage('field_storage_config')->create($field_storage_config);
+      $field_storage->save();
+      unset($field_storage_config['field_name']);
     }
+    $this->createdFieldManager->addFieldStorage($field_storage_config, $this->configuration['bundle_type'], $field_storage);
+
+    /** @var \Drupal\field\FieldConfigInterface $field_instance */
+    $field_instance = $this->entityTypeManager->getStorage('field_config')->create($this->getFieldConfig($this->configuration, $field_storage));
+    $field_instance->save();
+
+    $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig($instance + ['entity_type' => $this->configuration['entity_type']]));
+
     $form_display->save();
   }
 
   /**
-   * Determines if we can add a field like this.
-   *
-   * @param array $instance
-   *   Array of instance settings.
-   *
-   * @return bool
-   *   TRUE if we can add a new field, otherwise FALSE.
+   * {@inheritdoc}
    */
-  protected function isApplicable(array $instance) : bool {
+  public function isApplicable() : bool {
     $fieldTypeDefinitions = $this->fieldTypePluginManager->getDefinitions();
-    if (!isset($fieldTypeDefinitions[$this->configuration['field_type']])) {
+    if (!isset($fieldTypeDefinitions[$this->configuration['type']])) {
       return FALSE;
     }
     return TRUE;
@@ -146,7 +135,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   protected function getFieldStorageConfig(array $instance) : array {
     return [
       'entity_type' => $this->configuration['entity_type'],
-      'type' => $this->configuration['field_type'],
+      'type' => $this->configuration['type'],
       'cardinality' => $instance['cardinality'],
       'settings' => [],
     ];
@@ -167,7 +156,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
     return [
       'field_name' => $fieldStorage->getName(),
       'entity_type' => $this->configuration['entity_type'],
-      'type' => $this->configuration['field_type'],
+      'type' => $this->configuration['type'],
       'bundle' => $this->configuration['bundle_type'],
       'settings' => [],
     ];
@@ -199,7 +188,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
     }
 
     $fieldTypeDefinitions = $this->fieldTypePluginManager->getDefinitions();
-    return ['type' => $fieldTypeDefinitions[$this->configuration['field_type']]['default_widget']];
+    return ['type' => $fieldTypeDefinitions[$this->configuration['type']]['default_widget']];
   }
 
   /**
