@@ -46,7 +46,7 @@ class Media extends EntityTypeBase {
    */
   protected function getBundleConfig($bundle_id, array $bundle_config) {
     $config = parent::getBundleConfig($bundle_id, $bundle_config);
-    $config['source'] = $bundle_config['source'];
+    $config['source'] = $bundle_config['source']['plugin_id'];
 
     return $config;
   }
@@ -58,7 +58,7 @@ class Media extends EntityTypeBase {
     if (!parent::isApplicable($bundle_config)) {
       return FALSE;
     }
-    return !empty($this->mediaSourceManager->getDefinition($bundle_config['source'], FALSE));
+    return !empty($this->mediaSourceManager->getDefinition($bundle_config['source']['plugin_id'], FALSE));
   }
 
 }

@@ -35,12 +35,12 @@ class EntityReference extends FieldTypeBase {
   /**
    * {@inheritdoc}
    */
-  protected function isApplicable(array $instance) : bool {
-    if (!parent::isApplicable($instance)) {
+  public function isApplicable() : bool {
+    if (!parent::isApplicable()) {
       return FALSE;
     }
     $entity_types = $this->entityTypeManager->getDefinitions();
-    if (!isset($entity_types[$instance['target_type']])) {
+    if (!isset($entity_types[$this->configuration['target_type']])) {
       return FALSE;
     }
     return TRUE;

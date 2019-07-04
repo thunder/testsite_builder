@@ -137,10 +137,13 @@ class ConfigCreator {
         $testbuilder_entity_type->createBundle($bundle_id, $bundle_config);
         $configuration['bundle_type'] = $bundle_id;
         // Create fields.
-        foreach ($bundle_config['fields'] as $field_type => $field_instances) {
+        foreach ($bundle_config['fields'] as $field_instance) {
           /** @var \Drupal\testsite_builder\FieldTypeInterface $testbuilder_field_type */
-          $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_type, $configuration + ['field_type' => $field_type, 'instances' => $field_instances]);
-          $testbuilder_field_type->createFields();
+          $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_instance['type'], $configuration + $field_instance);
+          if (!$testbuilder_field_type->isApplicable()) {
+            continue;
+          }
+          $testbuilder_field_type->createField();
         }
       }
     }
