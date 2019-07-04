@@ -4,6 +4,9 @@ namespace Drupal\testsite_builder;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\testsite_builder\Events\ConfigCreatorEntityBundleCreateEvent;
+use Drupal\testsite_builder\Events\ConfigCreatorEvents;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * The ConfigCreator class.
@@ -69,6 +72,13 @@ class ConfigCreator {
   protected $entityTypePluginManager;
 
   /**
+   * The event dispatcher service.
+   *
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   */
+  protected $eventDispatcher;
+
+  /**
    * Constructs a new ConfigCreator object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
@@ -77,11 +87,14 @@ class ConfigCreator {
    *   The field type manager service.
    * @param \Drupal\testsite_builder\EntityTypePluginManager $entityTypePluginManager
    *   The entity type manager service.
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
+   *   The event dispatcher.
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager) {
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager, EventDispatcherInterface $event_dispatcher) {
     $this->entityTypeManager = $entityTypeManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
     $this->entityTypePluginManager = $entityTypePluginManager;
+    $this->eventDispatcher = $event_dispatcher;
   }
 
   /**
@@ -183,7 +196,8 @@ class ConfigCreator {
         }
 
         // Create bundle.
-        $testbuilder_entity_type->createBundle($bundle_id, $bundle_config);
+        $new_bundle = $testbuilder_entity_type->createBundle($bundle_id, $bundle_config);
+        $this->eventDispatcher->dispatch(ConfigCreatorEvents::ENTITY_BUNDLE_CREATE, new ConfigCreatorEntityBundleCreateEvent($new_bundle, $bundle_config));
         $configuration['bundle_type'] = $bundle_id;
 
         // Create fields.
@@ -196,6 +210,16 @@ class ConfigCreator {
           $testbuilder_field_type->createField();
         }
       }
+    }
+
+    // Store created data for content creator.
+    // TODO: Inject services!!!
+    if (isset($this->contentCreatorFile)) {
+      \Drupal::service('testsite_builder.content_creator_config_storage')->storeConfigToFile($this->contentCreatorFile);
+    }
+
+    if (isset($this->sampledDataFile)) {
+      \Drupal::service('testsite_builder.content_creator_sampled_data_storage')->storeSampledDataToFile($this->sampledDataFile);
     }
 
     return $this;

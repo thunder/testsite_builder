@@ -567,7 +567,7 @@ class ContentCreator {
         continue;
       }
 
-      $histogram = json_decode($field['_bundle_info']['histogram'], TRUE);
+      $histogram = $field['_bundle_info']['histogram'];
       $table_name = $field['_table']['name'];
       $rev_table_name = $field['_rev_table']['name'];
       if (!isset($this->cacheCsvFileHandlers[$entity_type][$table_name])) {

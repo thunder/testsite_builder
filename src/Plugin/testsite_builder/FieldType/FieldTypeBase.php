@@ -8,8 +8,11 @@ use Drupal\Core\Field\FieldTypePluginManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\field\FieldStorageConfigInterface;
 use Drupal\testsite_builder\CreatedFieldManager;
+use Drupal\testsite_builder\Events\ConfigCreatorEvents;
+use Drupal\testsite_builder\Events\ConfigCreatorFieldCreateEvent;
 use Drupal\testsite_builder\FieldTypeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Counts base fields of entities.
@@ -43,20 +46,28 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   protected $createdFieldManager;
 
   /**
+   * The event dispatcher service.
+   *
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   */
+  protected $eventDispatcher;
+
+  /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManagerInterface $fieldTypePluginManager, CreatedFieldManager $createdFieldManager) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManagerInterface $fieldTypePluginManager, CreatedFieldManager $createdFieldManager, EventDispatcherInterface $event_dispatcher) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityTypeManager = $entityTypeManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
     $this->createdFieldManager = $createdFieldManager;
+    $this->eventDispatcher = $event_dispatcher;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) : FieldTypeInterface {
-    return new static($configuration, $plugin_id, $plugin_definition, $container->get('entity_type.manager'), $container->get('plugin.manager.field.field_type'), $container->get('testsite_builder.created_field_manager'));
+    return new static($configuration, $plugin_id, $plugin_definition, $container->get('entity_type.manager'), $container->get('plugin.manager.field.field_type'), $container->get('testsite_builder.created_field_manager'), $container->get('event_dispatcher'));
   }
 
   /**
@@ -78,6 +89,8 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
     /** @var \Drupal\field\FieldConfigInterface $field_instance */
     $field_instance = $this->entityTypeManager->getStorage('field_config')->create($this->getFieldConfig($this->configuration, $field_storage));
     $field_instance->save();
+
+    $this->eventDispatcher->dispatch(ConfigCreatorEvents::FIELD_CREATE, new ConfigCreatorFieldCreateEvent($field_instance, $this->configuration));
 
     $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig());
 
