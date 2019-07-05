@@ -34,4 +34,16 @@ interface EntityTypeInterface extends PluginInspectionInterface {
    */
   public function isApplicable(array $bundle_config) : bool;
 
+  /**
+   * Method to do post bundle creation operations.
+   *
+   * @param string $bundle_id
+   *   The id of the new bundle.
+   * @param array $bundle_config
+   *   Additional bundle config.
+   * @param array $created_fields
+   *   Array of fields that was created for this bundle.
+   */
+  public function postCreateBundle(string $bundle_id, array $bundle_config, array $created_fields) : void;
+
 }

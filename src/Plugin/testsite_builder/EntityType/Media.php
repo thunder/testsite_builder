@@ -54,6 +54,21 @@ class Media extends EntityTypeBase {
   /**
    * {@inheritdoc}
    */
+  public function postCreateBundle(string $bundle_id, array $bundle_config, array $created_fields): void {
+    /** @var \Drupal\media\MediaTypeInterface $type */
+    $type = $this->entityTypeManager->getStorage('media_type')->load($bundle_id);
+
+    $config = $type->getSource()->getConfiguration();
+    $key = $bundle_config['source']['source_field_index'];
+    $config['source_field'] = $created_fields[$key]->getName();
+
+    $type->getSource()->setConfiguration($config);
+    $type->save();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function isApplicable(array $bundle_config): bool {
     if (!parent::isApplicable($bundle_config)) {
       return FALSE;

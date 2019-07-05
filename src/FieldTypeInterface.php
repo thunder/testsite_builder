@@ -3,6 +3,7 @@
 namespace Drupal\testsite_builder;
 
 use Drupal\Component\Plugin\PluginInspectionInterface;
+use Drupal\field\FieldConfigInterface;
 
 /**
  * Defines an interface for FieldType plugins.
@@ -12,7 +13,7 @@ interface FieldTypeInterface extends PluginInspectionInterface {
   /**
    * Creates all fields of a specific type.
    */
-  public function createField() : void;
+  public function createField() : FieldConfigInterface;
 
   /**
    * Determines if we can add a field like this.
