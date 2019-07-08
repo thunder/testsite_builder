@@ -57,7 +57,7 @@ class Media extends EntityTypeBase {
    */
   public function postCreate(ConfigEntityBundleBase $bundle, array $bundle_config, array $created_fields): void {
     /** @var \Drupal\media\MediaTypeInterface $bundle */
-    $source = $config = $bundle->getSource();
+    $source = $bundle->getSource();
     $config = $source->getConfiguration();
     if (isset($bundle_config['source']['source_field_index'])) {
       $key = $bundle_config['source']['source_field_index'];
