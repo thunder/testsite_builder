@@ -37,13 +37,13 @@ interface EntityTypeInterface extends PluginInspectionInterface {
   /**
    * Method to do post bundle creation operations.
    *
-   * @param string $bundle_id
-   *   The id of the new bundle.
+   * @param \Drupal\Core\Config\Entity\ConfigEntityBundleBase $bundle
+   *   The new bundle.
    * @param array $bundle_config
    *   Additional bundle config.
    * @param array $created_fields
    *   Array of fields that was created for this bundle.
    */
-  public function postCreateBundle(string $bundle_id, array $bundle_config, array $created_fields) : void;
+  public function postCreate(ConfigEntityBundleBase $bundle, array $bundle_config, array $created_fields) : void;
 
 }

@@ -2,6 +2,7 @@
 
 namespace Drupal\testsite_builder\Plugin\testsite_builder\EntityType;
 
+use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\media\MediaSourceManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -54,16 +55,27 @@ class Media extends EntityTypeBase {
   /**
    * {@inheritdoc}
    */
-  public function postCreateBundle(string $bundle_id, array $bundle_config, array $created_fields): void {
-    /** @var \Drupal\media\MediaTypeInterface $type */
-    $type = $this->entityTypeManager->getStorage('media_type')->load($bundle_id);
+  public function postCreate(ConfigEntityBundleBase $bundle, array $bundle_config, array $created_fields): void {
+    /** @var \Drupal\media\MediaTypeInterface $bundle */
+    $source = $config = $bundle->getSource();
+    $config = $source->getConfiguration();
+    if (isset($bundle_config['source']['source_field_index'])) {
+      $key = $bundle_config['source']['source_field_index'];
+      $config['source_field'] = $created_fields[$key]->getName();
+    }
+    else {
+      $source_field = $source->createSourceField($bundle);
+      /** @var \Drupal\field\FieldStorageConfigInterface $storage */
+      $storage = $source_field->getFieldStorageDefinition();
+      if ($storage->isNew()) {
+        $storage->save();
+      }
+      $source_field->save();
+      $config['source_field'] = $source_field->getName();
+    }
 
-    $config = $type->getSource()->getConfiguration();
-    $key = $bundle_config['source']['source_field_index'];
-    $config['source_field'] = $created_fields[$key]->getName();
-
-    $type->getSource()->setConfiguration($config);
-    $type->save();
+    $bundle->getSource()->setConfiguration($config);
+    $bundle->save();
   }
 
   /**
