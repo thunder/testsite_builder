@@ -44,13 +44,6 @@ class ConfigCreator {
   protected $contentCreatorFile;
 
   /**
-   * The content creator configuration array.
-   *
-   * @var string
-   */
-  protected $contentCreatorConfig = [];
-
-  /**
    * The sampled data types file.
    *
    * @var string
@@ -58,11 +51,11 @@ class ConfigCreator {
   protected $sampledDataFile;
 
   /**
-   * The content creator configuration array.
+   * The content creator config storage service.
    *
-   * @var string
+   * @var \Drupal\testsite_builder\ContentCreatorStorage
    */
-  protected $sampledData = [];
+  protected $contentCreatorStorage;
 
   /**
    * The entity type manager service.
@@ -89,12 +82,15 @@ class ConfigCreator {
    *   The entity type manager service.
    * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
    *   The event dispatcher.
+   * @param \Drupal\testsite_builder\ContentCreatorStorage $content_creator_storage
+   *   The content creator storage service.
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager, EventDispatcherInterface $event_dispatcher) {
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager, EventDispatcherInterface $event_dispatcher, ContentCreatorStorage $content_creator_storage) {
     $this->entityTypeManager = $entityTypeManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
     $this->entityTypePluginManager = $entityTypePluginManager;
     $this->eventDispatcher = $event_dispatcher;
+    $this->contentCreatorStorage = $content_creator_storage;
   }
 
   /**
@@ -213,13 +209,12 @@ class ConfigCreator {
     }
 
     // Store created data for content creator.
-    // TODO: Inject services!!!
     if (isset($this->contentCreatorFile)) {
-      \Drupal::service('testsite_builder.content_creator_config_storage')->storeConfigToFile($this->contentCreatorFile);
+      $this->contentCreatorStorage->storeConfigToFile($this->contentCreatorFile);
     }
 
     if (isset($this->sampledDataFile)) {
-      \Drupal::service('testsite_builder.content_creator_sampled_data_storage')->storeSampledDataToFile($this->sampledDataFile);
+      $this->contentCreatorStorage->storeSampledDataToFile($this->sampledDataFile);
     }
 
     return $this;

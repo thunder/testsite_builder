@@ -4,8 +4,8 @@ namespace Drupal\testsite_builder\Events;
 
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\testsite_builder\ContentCreatorConfigStorage;
-use Drupal\testsite_builder\ContentCreatorSampledDataStorage;
+use Drupal\field\FieldConfigInterface;
+use Drupal\testsite_builder\ContentCreatorStorage;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
@@ -18,9 +18,9 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
   /**
    * The content creator config storage service.
    *
-   * @var \Drupal\testsite_builder\ContentCreatorConfigStorage
+   * @var \Drupal\testsite_builder\ContentCreatorStorage
    */
-  protected $contentCreatorConfigStorage;
+  protected $contentCreatorStorage;
 
   /**
    * The entity manager service.
@@ -30,25 +30,15 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
   protected $entityTypeManager;
 
   /**
-   * The content creator sampled data storage service.
-   *
-   * @var \Drupal\testsite_builder\ContentCreatorSampledDataStorage
-   */
-  protected $contentCreatorSampledDataStorage;
-
-  /**
    * ContentCreatorEntitySubscriber constructor.
    *
-   * @param \Drupal\testsite_builder\ContentCreatorConfigStorage $content_creator_config_storage
-   *   The content creator config storage service.
-   * @param \Drupal\testsite_builder\ContentCreatorSampledDataStorage $content_creator_sampled_data_storage
-   *   The content creator sampled data storage service.
+   * @param \Drupal\testsite_builder\ContentCreatorStorage $content_creator_storage
+   *   The content creator storage service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity manager service.
    */
-  public function __construct(ContentCreatorConfigStorage $content_creator_config_storage, ContentCreatorSampledDataStorage $content_creator_sampled_data_storage, EntityTypeManagerInterface $entity_type_manager) {
-    $this->contentCreatorConfigStorage = $content_creator_config_storage;
-    $this->contentCreatorSampledDataStorage = $content_creator_sampled_data_storage;
+  public function __construct(ContentCreatorStorage $content_creator_storage, EntityTypeManagerInterface $entity_type_manager) {
+    $this->contentCreatorStorage = $content_creator_storage;
     $this->entityTypeManager = $entity_type_manager;
   }
 
@@ -79,7 +69,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
     $bundle_config = $event->getBundleConfig();
     $entity_type = $bundle_config->getEntityType()->getBundleOf();
 
-    if (!$this->contentCreatorConfigStorage->hasConfig([$entity_type])) {
+    if (!$this->contentCreatorStorage->hasConfig([$entity_type])) {
       $this->addBaseEntityConfig($bundle_config);
     }
 
@@ -90,7 +80,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
 
     $sampler_bundle_config = $event->getSamplerBundleConfig();
 
-    $this->contentCreatorConfigStorage->addConfig(
+    $this->contentCreatorStorage->addConfig(
       [$entity_type, '_bundles', $bundle_type],
       [
         '_type' => 'bundle',
@@ -124,7 +114,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
     // Entity -> Base Table.
     $base_table = $entity_definition->getBaseTable();
 
-    $this->contentCreatorConfigStorage->addConfig(
+    $this->contentCreatorStorage->addConfig(
       [$entity_type],
       [
         '_type' => 'entity',
@@ -143,7 +133,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
     if ($entity_definition->isRevisionable()) {
       $rev_base_table = $entity_definition->getRevisionTable();
 
-      $this->contentCreatorConfigStorage->addConfig(
+      $this->contentCreatorStorage->addConfig(
         [$entity_type, '_base_tables', $rev_base_table],
         [
           '_type' => 'table',
@@ -155,7 +145,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
 
     $data_table = $entity_definition->getDataTable();
     if ($data_table) {
-      $this->contentCreatorConfigStorage->addConfig(
+      $this->contentCreatorStorage->addConfig(
         [$entity_type, '_base_tables', $data_table],
         [
           '_type' => 'table',
@@ -166,7 +156,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
 
       if ($entity_definition->isRevisionable()) {
         $rev_data_table = $entity_definition->getRevisionDataTable();
-        $this->contentCreatorConfigStorage->addConfig(
+        $this->contentCreatorStorage->addConfig(
           [$entity_type, '_base_tables', $rev_data_table],
           [
             '_type' => 'table',
@@ -186,6 +176,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
   public function onFieldCreate(ConfigCreatorFieldCreateEvent $event) {
     $field_config = $event->getFieldConfig();
@@ -202,7 +193,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
       ->getTableMapping();
     $field_table_name = $table_mapping->getFieldTableName($field_name);
 
-    $this->contentCreatorConfigStorage->addConfig(
+    $this->contentCreatorStorage->addConfig(
       [$entity_type, '_bundles', $bundle_type, '_fields', $field_name],
       [
         '_type' => 'field',
@@ -219,7 +210,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
 
     if ($entity_definition->isRevisionable()) {
       $field_revision_table_name = $table_mapping->getDedicatedRevisionTableName($field_config->getFieldStorageDefinition());
-      $this->contentCreatorConfigStorage->addConfig(
+      $this->contentCreatorStorage->addConfig(
         [
           $entity_type,
           '_bundles',
@@ -242,7 +233,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
         'histogram' => $sampler_field_config['histogram'],
       ];
 
-      $this->contentCreatorConfigStorage->addConfig(
+      $this->contentCreatorStorage->addConfig(
         [
           $entity_type,
           '_bundles',
@@ -255,24 +246,36 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
       );
     }
 
-    if ($field_type !== 'entity_reference' && $field_type !== 'entity_reference_revisions' && !$this->contentCreatorSampledDataStorage->hasType($field_type)) {
-      /** @var \Drupal\Core\Field\FieldTypePluginManagerInterface $field_type_plugin */
-      $field_type_plugin = \Drupal::service('plugin.manager.field.field_type');
+    if ($field_type !== 'entity_reference' && $field_type !== 'entity_reference_revisions' && !$this->contentCreatorStorage->hasSampledData($field_type)) {
+      $this->createSampledDataForField($field_config);
+    }
+  }
 
-      /** @var \Drupal\Core\Field\FieldItemBase $sampler */
-      $sampler = $field_type_plugin->createInstance($field_config->getType(), [
-        'field_definition' => $field_config,
-      ]);
+  /**
+   * Generate sampled data for field type.
+   *
+   * @param \Drupal\field\FieldConfigInterface $field_config
+   *   The field configuration.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  protected function createSampledDataForField(FieldConfigInterface $field_config) {
+    /** @var \Drupal\Core\Field\FieldTypePluginManagerInterface $field_type_plugin */
+    $field_type_plugin = \Drupal::service('plugin.manager.field.field_type');
 
-      $samples = [];
-      for ($i = 0; $i < 5; $i++) {
-        $samples[] = $sampler->generateSampleValue($field_config);
-      }
+    /** @var \Drupal\Core\Field\FieldItemBase $sampled_data_sampler */
+    $sampled_data_sampler = $field_type_plugin->createInstance($field_config->getType(), [
+      'field_definition' => $field_config,
+    ]);
 
-      $samples = array_filter($samples);
-      if (!empty($samples)) {
-        $this->contentCreatorSampledDataStorage->addData($field_type, $samples);
-      }
+    $samples = [];
+    for ($i = 0; $i < 5; $i++) {
+      $samples[] = $sampled_data_sampler->generateSampleValue($field_config);
+    }
+
+    $samples = array_filter($samples);
+    if (!empty($samples)) {
+      $this->contentCreatorStorage->addSampledData($field_config->getType(), $samples);
     }
   }
 
