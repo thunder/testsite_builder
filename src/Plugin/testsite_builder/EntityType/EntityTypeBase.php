@@ -79,6 +79,12 @@ class EntityTypeBase extends PluginBase implements EntityTypeInterface, Containe
   /**
    * {@inheritdoc}
    */
+  public function postCreate(ConfigEntityBundleBase $bundle, array $bundle_config, array $created_fields): void {
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function isApplicable(array $bundle_config) : bool {
     return TRUE;
   }

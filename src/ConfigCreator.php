@@ -6,6 +6,7 @@ use Drupal\Component\Serialization\Json;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\testsite_builder\Events\ConfigCreatorEntityBundleCreateEvent;
 use Drupal\testsite_builder\Events\ConfigCreatorEvents;
+use Drupal\testsite_builder\Events\ConfigCreatorFieldCreateEvent;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -192,19 +193,28 @@ class ConfigCreator {
         }
 
         // Create bundle.
-        $new_bundle = $testbuilder_entity_type->createBundle($bundle_id, $bundle_config);
-        $this->eventDispatcher->dispatch(ConfigCreatorEvents::ENTITY_BUNDLE_CREATE, new ConfigCreatorEntityBundleCreateEvent($new_bundle, $bundle_config));
+        $bundle = $testbuilder_entity_type->createBundle($bundle_id, $bundle_config);
+        $this->eventDispatcher->dispatch(ConfigCreatorEvents::ENTITY_BUNDLE_CREATE, new ConfigCreatorEntityBundleCreateEvent($bundle, $bundle_config));
         $configuration['bundle_type'] = $bundle_id;
 
         // Create fields.
-        foreach ($bundle_config['fields'] as $field_instance) {
+        $created_fields = [];
+        foreach ($bundle_config['fields'] as $field_index => $field_instance) {
+          $field_configuration = $configuration + $field_instance;
+
           /** @var \Drupal\testsite_builder\FieldTypeInterface $testbuilder_field_type */
-          $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_instance['type'], $configuration + $field_instance);
+          $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_instance['type'], $field_configuration);
           if (!$testbuilder_field_type->isApplicable()) {
             continue;
           }
-          $testbuilder_field_type->createField();
+
+          $field = $testbuilder_field_type->createField();
+          $this->eventDispatcher->dispatch(ConfigCreatorEvents::FIELD_CREATE, new ConfigCreatorFieldCreateEvent($field, $field_configuration));
+
+          $created_fields[$field_index] = $field;
         }
+
+        $testbuilder_entity_type->postCreate($bundle, $bundle_config, $created_fields);
       }
     }
 
