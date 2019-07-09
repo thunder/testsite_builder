@@ -2,6 +2,7 @@
 
 namespace Drupal\testsite_builder\Plugin\testsite_builder\EntityType;
 
+use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\media\MediaSourceManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -49,6 +50,32 @@ class Media extends EntityTypeBase {
     $config['source'] = $bundle_config['source']['plugin_id'];
 
     return $config;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function postCreate(ConfigEntityBundleBase $bundle, array $bundle_config, array $created_fields): void {
+    /** @var \Drupal\media\MediaTypeInterface $bundle */
+    $source = $bundle->getSource();
+    $config = $source->getConfiguration();
+    if (isset($bundle_config['source']['source_field_index'])) {
+      $key = $bundle_config['source']['source_field_index'];
+      $config['source_field'] = $created_fields[$key]->getName();
+    }
+    else {
+      $source_field = $source->createSourceField($bundle);
+      /** @var \Drupal\field\FieldStorageConfigInterface $storage */
+      $storage = $source_field->getFieldStorageDefinition();
+      if ($storage->isNew()) {
+        $storage->save();
+      }
+      $source_field->save();
+      $config['source_field'] = $source_field->getName();
+    }
+
+    $bundle->getSource()->setConfiguration($config);
+    $bundle->save();
   }
 
   /**

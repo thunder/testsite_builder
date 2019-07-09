@@ -6,6 +6,7 @@ use Drupal\Component\Plugin\PluginBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\field\FieldConfigInterface;
 use Drupal\field\FieldStorageConfigInterface;
 use Drupal\testsite_builder\CreatedFieldManager;
 use Drupal\testsite_builder\FieldTypeInterface;
@@ -62,7 +63,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   /**
    * {@inheritdoc}
    */
-  public function createField() : void {
+  public function createField() : FieldConfigInterface {
     $form_display = entity_get_form_display($this->configuration['entity_type'], $this->configuration['bundle_type'], 'default');
 
     $field_storage_config = $this->getFieldStorageConfig($this->configuration);
@@ -82,6 +83,8 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
     $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig());
 
     $form_display->save();
+
+    return $field_instance;
   }
 
   /**
