@@ -713,8 +713,6 @@ class ContentCreator {
 
   /**
    * Import generated CSV files into database.
-   *
-   * TODO: Split generate and import into two classes.
    */
   public function importCsvFiles() {
     // We are trying to be nice. (fe. 8 cores -> 6 forks).
