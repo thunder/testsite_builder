@@ -81,6 +81,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
     $field_instance->save();
 
     $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig());
+
     $form_display->save();
 
     return $field_instance;
