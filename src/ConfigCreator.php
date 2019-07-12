@@ -38,20 +38,6 @@ class ConfigCreator {
   protected $fieldTypePluginManager;
 
   /**
-   * The content creator config file.
-   *
-   * @var string
-   */
-  protected $contentCreatorFile;
-
-  /**
-   * The sampled data types file.
-   *
-   * @var string
-   */
-  protected $sampledDataFile;
-
-  /**
    * The content creator config storage service.
    *
    * @var \Drupal\testsite_builder\ContentCreatorStorage
@@ -106,26 +92,6 @@ class ConfigCreator {
   public function setReportData(string $file) : ConfigCreator {
     $this->reportData = Json::decode(file_get_contents($file));
     return $this;
-  }
-
-  /**
-   * Sets content creator config file.
-   *
-   * @param string $filename
-   *   The file name for content creator config.
-   */
-  public function setContentCreatorFile($filename) {
-    $this->contentCreatorFile = $filename;
-  }
-
-  /**
-   * Sets sampled data types file.
-   *
-   * @param string $filename
-   *   The file name to output sampled data types.
-   */
-  public function setSampledDataFile($filename) {
-    $this->sampledDataFile = $filename;
   }
 
   /**
@@ -216,15 +182,6 @@ class ConfigCreator {
 
         $testbuilder_entity_type->postCreate($bundle, $bundle_config, $created_fields);
       }
-    }
-
-    // Store created data for content creator.
-    if (isset($this->contentCreatorFile)) {
-      $this->contentCreatorStorage->storeConfigToFile($this->contentCreatorFile);
-    }
-
-    if (isset($this->sampledDataFile)) {
-      $this->contentCreatorStorage->storeSampledDataToFile($this->sampledDataFile);
     }
 
     return $this;

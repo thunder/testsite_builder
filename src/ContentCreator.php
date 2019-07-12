@@ -72,11 +72,11 @@ class ContentCreator {
   protected $config = [];
 
   /**
-   * List of sampled data types with generated data.
+   * List of sample data types with generated data.
    *
    * @var array
    */
-  protected $sampledDataTypes = [];
+  protected $sampleDataTypes = [];
 
   /**
    * Output directory for created CSV files.
@@ -151,77 +151,42 @@ class ContentCreator {
   ];
 
   /**
+   * The content creator storage service.
+   *
+   * @var \Drupal\testsite_builder\ContentCreatorStorage
+   */
+  protected $storage;
+
+  /**
    * Constructs a new ContentCreator object.
    *
+   * @param \Drupal\testsite_builder\ContentCreatorStorage $storage
+   *   The content creator storage service.
    * @param \Drupal\Core\Database\Connection $database
    *   The database connection.
    * @param \Drupal\testsite_builder\BaseEntityTablesPluginManager $base_entity_tables_plugin_manager
    *   The base entity tables plugin manager service.
    */
-  public function __construct(Connection $database, BaseEntityTablesPluginManager $base_entity_tables_plugin_manager) {
+  public function __construct(ContentCreatorStorage $storage, Connection $database, BaseEntityTablesPluginManager $base_entity_tables_plugin_manager) {
+    $this->storage = $storage;
     $this->database = $database;
     $this->baseEntityTablesPluginManager = $base_entity_tables_plugin_manager;
   }
 
   /**
-   * Sets configuration for content creator.
-   *
-   * @param array $config
-   *   The content creator configuration created during configuration create.
-   */
-  public function setConfig(array $config) {
-    $this->config = $config;
-  }
-
-  /**
-   * Sets sampled data types.
-   *
-   * @param array $sampled_data
-   *   The sampled data types created during configuration creation.
-   */
-  public function setSampledData(array $sampled_data) {
-    $this->sampledDataTypes = $sampled_data;
-  }
-
-  /**
-   * Sets output directory for CSV files.
-   *
-   * @param string $directory
-   *   The output directory for CSV files.
-   */
-  public function setOutputDirectory($directory) {
-    $this->outputDirectory = realpath($directory);
-  }
-
-  /**
-   * Get sample data used to generate database entries.
-   *
-   * TODO: We call this a lot. Investigate if performance can be improved.
-   *
-   * @param string $type
-   *   The data type.
-   * @param bool $random
-   *   Flag if random value should be returned or not.
-   *
-   * @return mixed
-   *   Returns sampled data.
-   */
-  protected function getSampledData($type, $random = TRUE) {
-    if (!isset($this->sampledDataTypes[$type])) {
-      return [];
-    }
-
-    if (!$random) {
-      return $this->sampledDataTypes[$type][0];
-    }
-
-    return $this->sampledDataTypes[$type][mt_rand(0, count($this->sampledDataTypes[$type]) - 1)];
-  }
-
-  /**
    * Init global state.
    */
-  protected function initGlobalState() {
+  protected function init() {
+    $this->config = $this->storage->getConfig();
+    $this->sampleDataTypes = $this->storage->getSampleData();
+
+    $this->outputDirectory = sys_get_temp_dir() . '/' . uniqid('testsite_builder_content_creator_', TRUE);
+    mkdir($this->outputDirectory, 0777, TRUE);
+
+    // Store config and sample data.
+    file_put_contents($this->outputDirectory . '/_config.json', json_encode($this->config, JSON_PRETTY_PRINT));
+    file_put_contents($this->outputDirectory . '/_sample_data.json', json_encode($this->sampleDataTypes, JSON_PRETTY_PRINT));
+
     $this->globalState = [
       'entity_index' => 0,
       'bundle_index' => 0,
@@ -270,7 +235,8 @@ class ContentCreator {
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
   public function createCsvFiles() {
-    $this->initGlobalState();
+    $this->init();
+
     foreach ($this->baseEntityTypes as $entity_type) {
       $this->initEntityState($entity_type);
 
@@ -410,7 +376,8 @@ class ContentCreator {
 
     // Prepare row arrays.
     $row_templates = $this->getBaseTableTemplates($entity_type);
-    $this->getBaseEntityTablesPlugin($entity_type)->alterRowTemplate($row_templates, $entity_type_state);
+    $this->getBaseEntityTablesPlugin($entity_type)
+      ->alterRowTemplate($row_templates, $entity_type_state);
     $variable_row_data = [
       'bundle' => $bundle_type,
     ];
@@ -478,7 +445,7 @@ class ContentCreator {
         $this->cacheCsvFileHandlers[$entity_type][$rev_table_name] = fopen($this->outputDirectory . '/' . $rev_table_name . '.csv', 'w');
 
         $row = static::$fieldTableTemplates;
-        $values = $this->getSampledData($type, FALSE);
+        $values = $this->getSampleData($type, FALSE);
         foreach ($values as $key => $value) {
           $row[$type . '_' . $key] = $value;
         }
@@ -527,7 +494,7 @@ class ContentCreator {
         $row['entity_id'] = $entity_id;
         $row['revision_id'] = $entity_id;
 
-        $values = $this->getSampledData($type);
+        $values = $this->getSampleData($type);
         foreach ($values as $key => $value) {
           $row[$type . '_' . $key] = $value;
         }
@@ -563,7 +530,7 @@ class ContentCreator {
       }
 
       $target_entity_type = $field['_bundle_info']['target_type'];
-      if (!in_array($target_entity_type, ['media', 'paragraph'])) {
+      if (!in_array($target_entity_type, ['media', 'paragraph', 'taxonomy_term'])) {
         continue;
       }
 
@@ -712,6 +679,31 @@ class ContentCreator {
   }
 
   /**
+   * Get sample data used to generate database entries.
+   *
+   * TODO: We call this a lot. Investigate if performance can be improved.
+   *
+   * @param string $type
+   *   The data type.
+   * @param bool $random
+   *   Flag if random value should be returned or not.
+   *
+   * @return mixed
+   *   Returns sample data.
+   */
+  protected function getSampleData($type, $random = TRUE) {
+    if (!isset($this->sampleDataTypes[$type])) {
+      return [];
+    }
+
+    if (!$random) {
+      return $this->sampleDataTypes[$type][0];
+    }
+
+    return $this->sampleDataTypes[$type][mt_rand(0, count($this->sampleDataTypes[$type]) - 1)];
+  }
+
+  /**
    * Import generated CSV files into database.
    */
   public function importCsvFiles() {
@@ -749,12 +741,9 @@ class ContentCreator {
     for ($fork_index = 0; $fork_index < $number_of_forks; $fork_index++) {
       switch ($pid = pcntl_fork()) {
         case -1:
-          echo "FORK: Fork failed" . PHP_EOL;
           break;
 
         case 0:
-          echo "FORK: Child #{$fork_index} is starting MySQL import..." . PHP_EOL;
-
           $db_conn = $this->getPdoConnection();
 
           // Some performance boost flags.
@@ -764,8 +753,6 @@ class ContentCreator {
 
           // Import tables distributed to this fork.
           foreach ($list_of_tables[$fork_index] as $table_name) {
-            echo "FORK: Child #{$fork_index} importing: " . $table_name . PHP_EOL;
-
             $csv_file_name = $this->outputDirectory . '/' . $table_name . '.csv';
             $db_conn->query("SET autocommit = 0")->execute();
             $import_query = "LOAD DATA INFILE '{$csv_file_name}'" . PHP_EOL .
@@ -792,7 +779,6 @@ class ContentCreator {
     }
 
     while (!empty($children_pids)) {
-      echo "FORK: Parent, waiting for children to finish their jobs..." . PHP_EOL;
       sleep(5);
 
       foreach ($children_pids as $fork_index => $pid) {
@@ -800,7 +786,6 @@ class ContentCreator {
         $wait_result = pcntl_waitpid($pid, $status, WNOHANG);
 
         if ($wait_result == -1 || $wait_result > 0) {
-          echo "FORK: Parent, child {$fork_index} has finished." . PHP_EOL;
           unset($children_pids[$fork_index]);
         }
       }
@@ -850,6 +835,24 @@ class ContentCreator {
     $driver_class = $namespace . '\\Connection';
 
     return $driver_class::open($connection_info);
+  }
+
+  /**
+   * Get created temporally output directory.
+   *
+   * @return string
+   *   Returns the output directory.
+   */
+  public function getOutputDirectory() {
+    return $this->outputDirectory;
+  }
+
+  /**
+   * Remove created temporally output folder.
+   */
+  public function cleanUp() {
+    array_map('unlink', glob("{$this->outputDirectory}/*"));
+    rmdir($this->outputDirectory);
   }
 
 }

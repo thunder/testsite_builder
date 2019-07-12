@@ -21,7 +21,7 @@ services:
 
   testsite_builder.content_creator:
     class: Drupal\testsite_builder\ContentCreator
-    arguments: ['@database', '@plugin.manager.base_entity_tables']
+    arguments: ['@testsite_builder.content_creator_storage','@database', '@plugin.manager.base_entity_tables']
 
   testsite_builder.content_creator_storage:
     class: Drupal\testsite_builder\ContentCreatorStorage

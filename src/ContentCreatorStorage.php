@@ -19,11 +19,11 @@ class ContentCreatorStorage {
   protected $configStorage = [];
 
   /**
-   * Sampled data storage.
+   * Sample data storage.
    *
    * @var array
    */
-  protected $sampledDataStorage = [];
+  protected $sampleDataStorage = [];
 
   /**
    * Add config.
@@ -54,6 +54,16 @@ class ContentCreatorStorage {
   }
 
   /**
+   * Returns full content creator configuration.
+   *
+   * @return array
+   *   The config creator configuration.
+   */
+  public function getConfig() {
+    return $this->configStorage;
+  }
+
+  /**
    * The output file to store JSON of content creator configuration.
    *
    * @param string $file_name
@@ -64,38 +74,48 @@ class ContentCreatorStorage {
   }
 
   /**
-   * Add sampled data for data type.
+   * Add sample data for data type.
    *
    * @param string $type
    *   The data type.
-   * @param array $sampled_data
-   *   The sampled data.
+   * @param array $sample_data
+   *   The sample data.
    */
-  public function addSampledData($type, array $sampled_data) {
-    $this->sampledDataStorage[$type] = $sampled_data;
+  public function addSampleData($type, array $sample_data) {
+    $this->sampleDataStorage[$type] = $sample_data;
   }
 
   /**
-   * Checks if sampled data ty[e already exists.
+   * Checks if sample data ty[e already exists.
    *
    * @param string $type
    *   The data type.
    *
    * @return bool
-   *   Returns if sampled data for data type already exists.
+   *   Returns if sample data for data type already exists.
    */
-  public function hasSampledData($type) {
-    return isset($this->sampledDataStorage[$type]);
+  public function hasSampleData($type) {
+    return isset($this->sampleDataStorage[$type]);
   }
 
   /**
-   * The output file to store JSON of sampled data types.
+   * Returns sample data.
+   *
+   * @return array
+   *   The sample data.
+   */
+  public function getSampleData() {
+    return $this->sampleDataStorage;
+  }
+
+  /**
+   * The output file to store JSON of sample data types.
    *
    * @param string $file_name
    *   The output file name.
    */
-  public function storeSampledDataToFile($file_name) {
-    file_put_contents($file_name, json_encode($this->sampledDataStorage, JSON_PRETTY_PRINT));
+  public function storeSampleDataToFile($file_name) {
+    file_put_contents($file_name, json_encode($this->sampleDataStorage, JSON_PRETTY_PRINT));
   }
 
 }

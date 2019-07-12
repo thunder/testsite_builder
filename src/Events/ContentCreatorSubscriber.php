@@ -246,7 +246,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
       );
     }
 
-    if ($field_type !== 'entity_reference' && $field_type !== 'entity_reference_revisions' && !$this->contentCreatorStorage->hasSampledData($field_type)) {
+    if ($field_type !== 'entity_reference' && $field_type !== 'entity_reference_revisions' && !$this->contentCreatorStorage->hasSampleData($field_type)) {
       $this->createSampledDataForField($field_config);
     }
   }
@@ -275,7 +275,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
 
     $samples = array_filter($samples);
     if (!empty($samples)) {
-      $this->contentCreatorStorage->addSampledData($field_config->getType(), $samples);
+      $this->contentCreatorStorage->addSampleData($field_config->getType(), $samples);
     }
   }
 

@@ -3,6 +3,7 @@
 namespace Drupal\testsite_builder\Command;
 
 use Drupal\testsite_builder\ConfigCreator;
+use Drupal\testsite_builder\ContentCreator;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -31,10 +32,32 @@ class CreateConfigCommand extends ContainerAwareCommand {
   protected $configCreator;
 
   /**
-   * Constructs a new CreateConfigCommand object.
+   * The content creator service.
+   *
+   * @var \Drupal\testsite_builder\ContentCreator
    */
-  public function __construct(ConfigCreator $configCreator) {
-    $this->configCreator = $configCreator;
+  protected $contentCreator;
+
+  /**
+   * The moment when action is started.
+   *
+   * This used to measure time needed to finish different actions in process.
+   *
+   * @var int
+   */
+  protected $startActionTime;
+
+  /**
+   * Constructs a new CreateConfigCommand object.
+   *
+   * @param \Drupal\testsite_builder\ConfigCreator $config_creator
+   *   The config creator service.
+   * @param \Drupal\testsite_builder\ContentCreator $content_creator
+   *   The content creator service.
+   */
+  public function __construct(ConfigCreator $config_creator, ContentCreator $content_creator) {
+    $this->configCreator = $config_creator;
+    $this->contentCreator = $content_creator;
     parent::__construct();
   }
 
@@ -45,8 +68,8 @@ class CreateConfigCommand extends ContainerAwareCommand {
     $this
       ->setName('testsite-builder:create-config')
       ->addArgument('file', InputArgument::REQUIRED, $this->trans('commands.testsite_builder.create-config.arguments.file'))
-      ->addOption('content-creator-config', NULL, InputArgument::OPTIONAL, 'commands.testsite_builder.create-config.options.content-creator-config')
-      ->addOption('sampled-data', NULL, InputArgument::OPTIONAL, 'commands.testsite_builder.create-config.options.sampled-data')
+      ->addOption('create-content', NULL, NULL, 'commands.testsite_builder.create-config.options.create-content')
+      ->addOption('keep-content-files', NULL, NULL, 'commands.testsite_builder.create-config.options.keep-content-files')
       ->setDescription($this->trans('commands.testsite_builder.create-config.description'));
   }
 
@@ -54,39 +77,92 @@ class CreateConfigCommand extends ContainerAwareCommand {
    * {@inheritdoc}
    */
   protected function execute(InputInterface $input, OutputInterface $output) {
-    $file = $input->getArgument('file');
+    $io = $this->getIo();
 
+    if ($input->getOption('keep-content-files') && !$input->getOption('create-content')) {
+      $io->error($this->trans('commands.testsite_builder.create-config.messages.content_invalid_keep_files'));
+
+      return;
+    }
+
+    $file = $input->getArgument('file');
     $this->configCreator->setReportData($file);
 
-    if ($input->hasOption('content-creator-config')) {
-      $this->configCreator->setContentCreatorFile($input->getOption('content-creator-config'));
-    }
-
-    if ($input->hasOption('sampled-data')) {
-      $this->configCreator->setSampledDataFile($input->getOption('sampled-data'));
-    }
-
-    $io = $this->getIo();
     $io->newLine();
     if (!$io->confirm($this->trans('commands.testsite_builder.create-config.messages.confirm'))) {
       $io->comment($this->trans('commands.common.questions.canceled'));
       return;
     }
 
-    $io->comment($this->trans('commands.testsite_builder.create-config.messages.cleanup'));
+    $io->comment($this->trans('commands.testsite_builder.create-config.messages.config_cleanup'));
+    $this->beforeAction();
     $this->configCreator->cleanup();
+    $this->afterAction();
 
     $io->newLine();
-    $io->comment($this->trans('commands.testsite_builder.create-config.messages.create_config'));
+    $io->comment($this->trans('commands.testsite_builder.create-config.messages.config_create'));
+    $this->beforeAction();
     $this->configCreator->create();
+    $this->afterAction();
 
     $io->newLine();
     $io->comment($this->trans('commands.cache.rebuild.messages.rebuild'));
     $command = $this->getApplication()->find('cache:rebuild');
+    $this->beforeAction();
     $command->run(new ArrayInput([]), new NullOutput());
+    $this->afterAction();
+
+    if (!$input->getOption('create-content')) {
+      $io->newLine();
+      $io->success($this->trans('commands.testsite_builder.create-config.messages.config_success'));
+
+      return;
+    }
+
+    $io->newLine();
+    $io->comment($this->trans('commands.testsite_builder.create-config.messages.content_create'));
+    $this->beforeAction();
+    $this->contentCreator->createCsvFiles();
+    $this->afterAction();
+
+
+    $io->newLine();
+    $io->comment($this->trans('commands.testsite_builder.create-config.messages.content_import'));
+    $this->beforeAction();
+    $this->contentCreator->importCsvFiles();
+    $this->afterAction();
+
+    $io->newLine();
+    if (!$input->getOption('keep-content-files')) {
+      $io->comment($this->trans('commands.testsite_builder.create-config.messages.content_cleanup'));
+      $this->beforeAction();
+      $this->contentCreator->cleanUp();
+      $this->afterAction();
+    }
+    else {
+      $io->comment($this->trans('commands.testsite_builder.create-config.messages.content_output_directory'));
+      $io->comment($this->contentCreator->getOutputDirectory());
+    }
 
     $io->newLine();
     $io->success($this->trans('commands.testsite_builder.create-config.messages.success'));
+  }
+
+  /**
+   * Start tracking time needed to execute action.
+   */
+  protected function beforeAction() {
+    $this->startActionTime = microtime(TRUE);
+  }
+
+  /**
+   * End tracking time needed to execute action and report it.
+   */
+  protected function afterAction() {
+    $end_time = microtime(TRUE);
+
+    $execution_time = ($end_time - $this->startActionTime);
+    $this->getIo()->info($this->trans('commands.testsite_builder.create-config.messages.report_time') . $execution_time . " [s]");
   }
 
 }

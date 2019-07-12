@@ -1,11 +1,6 @@
 services:
   testsite_builder.create_config:
     class: Drupal\testsite_builder\Command\CreateConfigCommand
-    arguments: ['@testsite_builder.config_creator']
-    tags:
-      - { name: drupal.command }
-  testsite_builder.create_content:
-    class: Drupal\testsite_builder\Command\CreateContentCommand
-    arguments: ['@testsite_builder.content_creator']
+    arguments: ['@testsite_builder.config_creator', '@testsite_builder.content_creator']
     tags:
       - { name: drupal.command }
