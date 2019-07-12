@@ -247,30 +247,30 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
     }
 
     if ($field_type !== 'entity_reference' && $field_type !== 'entity_reference_revisions' && !$this->contentCreatorStorage->hasSampleData($field_type)) {
-      $this->createSampledDataForField($field_config);
+      $this->createSampleDataForField($field_config);
     }
   }
 
   /**
-   * Generate sampled data for field type.
+   * Generate sample data for field type.
    *
    * @param \Drupal\field\FieldConfigInterface $field_config
    *   The field configuration.
    *
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
-  protected function createSampledDataForField(FieldConfigInterface $field_config) {
+  protected function createSampleDataForField(FieldConfigInterface $field_config) {
     /** @var \Drupal\Core\Field\FieldTypePluginManagerInterface $field_type_plugin */
     $field_type_plugin = \Drupal::service('plugin.manager.field.field_type');
 
-    /** @var \Drupal\Core\Field\FieldItemBase $sampled_data_sampler */
-    $sampled_data_sampler = $field_type_plugin->createInstance($field_config->getType(), [
+    /** @var \Drupal\Core\Field\FieldItemBase $data_generator */
+    $data_generator = $field_type_plugin->createInstance($field_config->getType(), [
       'field_definition' => $field_config,
     ]);
 
     $samples = [];
     for ($i = 0; $i < 5; $i++) {
-      $samples[] = $sampled_data_sampler->generateSampleValue($field_config);
+      $samples[] = $data_generator->generateSampleValue($field_config);
     }
 
     $samples = array_filter($samples);
