@@ -3,7 +3,7 @@
 namespace Drupal\testsite_builder\Plugin\BaseEntityTables;
 
 /**
- * Generic entity type plugin.
+ * Paragraph entity type plugin.
  *
  * @BaseEntityTables(
  *   id = "paragraph",

@@ -107,64 +107,29 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
 
     $entity_definition = $this->entityTypeManager->getDefinition($entity_type);
 
-    /** @var \Drupal\Core\Entity\Sql\DefaultTableMapping $table_mapping */
-    $table_mapping = $this->entityTypeManager->getStorage($entity_type)
-      ->getTableMapping();
-
-    // Entity -> Base Table.
-    $base_table = $entity_definition->getBaseTable();
-
     $this->contentCreatorStorage->addConfig(
       [$entity_type],
       [
         '_type' => 'entity',
         '_entity_definition_keys' => $entity_definition->getKeys(),
-        '_base_tables' => [
-          $base_table => [
-            '_type' => 'table',
-            '_columns' => $table_mapping->getAllColumns($base_table),
-            'name' => $base_table,
-          ],
-        ],
+        '_base_tables' => [],
         'name' => $entity_type,
       ]
     );
 
-    if ($entity_definition->isRevisionable()) {
-      $rev_base_table = $entity_definition->getRevisionTable();
+    /** @var \Drupal\Core\Entity\Sql\DefaultTableMapping $table_mapping */
+    $table_mapping = $this->entityTypeManager->getStorage($entity_type)
+      ->getTableMapping();
 
+    foreach ($table_mapping->getTableNames() as $table_name) {
       $this->contentCreatorStorage->addConfig(
-        [$entity_type, '_base_tables', $rev_base_table],
+        [$entity_type, '_base_tables', $table_name],
         [
           '_type' => 'table',
-          '_columns' => $table_mapping->getAllColumns($rev_base_table),
-          'name' => $rev_base_table,
+          '_columns' => $table_mapping->getAllColumns($table_name),
+          'name' => $table_name,
         ]
       );
-    }
-
-    $data_table = $entity_definition->getDataTable();
-    if ($data_table) {
-      $this->contentCreatorStorage->addConfig(
-        [$entity_type, '_base_tables', $data_table],
-        [
-          '_type' => 'table',
-          '_columns' => $table_mapping->getAllColumns($data_table),
-          'name' => $data_table,
-        ]
-      );
-
-      if ($entity_definition->isRevisionable()) {
-        $rev_data_table = $entity_definition->getRevisionDataTable();
-        $this->contentCreatorStorage->addConfig(
-          [$entity_type, '_base_tables', $rev_data_table],
-          [
-            '_type' => 'table',
-            '_columns' => $table_mapping->getAllColumns($rev_data_table),
-            'name' => $rev_data_table,
-          ]
-        );
-      }
     }
   }
 
