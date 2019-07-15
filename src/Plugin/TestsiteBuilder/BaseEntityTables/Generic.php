@@ -1,13 +1,13 @@
 <?php
 
-namespace Drupal\testsite_builder\Plugin\BaseEntityTables;
+namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\BaseEntityTables;
 
 use Drupal\testsite_builder\BaseEntityTablesBase;
 
 /**
  * Generic entity type plugin.
  *
- * @BaseEntityTables(
+ * @TestsiteBuilderBaseEntityTables(
  *   id = "generic",
  *   label = @Translation("Generic"),
  *   description = @Translation("Generic base entity tables plugin.")

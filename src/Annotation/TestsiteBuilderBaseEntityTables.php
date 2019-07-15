@@ -12,7 +12,7 @@ use Drupal\Component\Annotation\Plugin;
  *
  * @Annotation
  */
-class BaseEntityTables extends Plugin {
+class TestsiteBuilderBaseEntityTables extends Plugin {
 
   /**
    * The plugin ID.

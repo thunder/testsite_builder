@@ -23,10 +23,10 @@ class BaseEntityTablesPluginManager extends DefaultPluginManager {
    *   The module handler to invoke the alter hook with.
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
-    parent::__construct('Plugin/BaseEntityTables', $namespaces, $module_handler, 'Drupal\testsite_builder\BaseEntityTablesInterface', 'Drupal\testsite_builder\Annotation\BaseEntityTables');
+    parent::__construct('Plugin/TestsiteBuilder/BaseEntityTables', $namespaces, $module_handler, 'Drupal\testsite_builder\BaseEntityTablesInterface', 'Drupal\testsite_builder\Annotation\TestsiteBuilderBaseEntityTables');
 
-    $this->alterInfo('base_entity_tables_plugin_info');
-    $this->setCacheBackend($cache_backend, 'base_entity_tables_plugins');
+    $this->alterInfo('testsite_builder_base_entity_tables_plugin_info');
+    $this->setCacheBackend($cache_backend, 'testsite_builder_base_entity_tables_plugins');
   }
 
 }

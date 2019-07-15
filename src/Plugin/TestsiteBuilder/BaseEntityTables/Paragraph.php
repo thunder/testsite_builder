@@ -1,11 +1,11 @@
 <?php
 
-namespace Drupal\testsite_builder\Plugin\BaseEntityTables;
+namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\BaseEntityTables;
 
 /**
  * Paragraph entity type plugin.
  *
- * @BaseEntityTables(
+ * @TestsiteBuilderBaseEntityTables(
  *   id = "paragraph",
  *   label = @Translation("Paragraph"),
  *   description = @Translation("Base entity tables plugin for paragraphs.")

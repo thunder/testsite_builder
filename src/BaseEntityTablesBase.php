@@ -5,7 +5,7 @@ namespace Drupal\testsite_builder;
 use Drupal\Core\Plugin\PluginBase;
 
 /**
- * Base BaseEntityTables.
+ * Base BaseEntityTables plugin class.
  */
 abstract class BaseEntityTablesBase extends PluginBase implements BaseEntityTablesInterface {
 

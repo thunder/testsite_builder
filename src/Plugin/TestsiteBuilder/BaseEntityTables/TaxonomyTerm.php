@@ -1,11 +1,11 @@
 <?php
 
-namespace Drupal\testsite_builder\Plugin\BaseEntityTables;
+namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\BaseEntityTables;
 
 /**
  * Taxonomy term entity type plugin.
  *
- * @BaseEntityTables(
+ * @TestsiteBuilderBaseEntityTables(
  *   id = "taxonomy_term",
  *   label = @Translation("TaxonomyTerm"),
  *   description = @Translation("Base entity tables plugin for taxonomy_term.")
