@@ -231,6 +231,8 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
     /** @var \Drupal\Core\Field\FieldItemBase $data_generator */
     $data_generator = $field_type_plugin->createInstance($field_config->getType(), [
       'field_definition' => $field_config,
+      'name' => $field_config->getTypedData()->getName(),
+      'parent' => $field_config->getTypedData()->getParent(),
     ]);
 
     $samples = [];
