@@ -133,6 +133,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
       'entity_type' => $this->configuration['entity_type'],
       'type' => $this->configuration['type'],
       'bundle' => $this->configuration['bundle_type'],
+      'required' => $this->configuration['required'] ?? FALSE,
       'settings' => [],
     ];
   }
