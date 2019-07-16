@@ -128,11 +128,11 @@ class ContentCreator {
   protected $cacheBaseEntityTablesPlugin = [];
 
   /**
-   * Keeps track of information relation to entity.
+   * Keeps track of number of created entities per type.
    *
    * @var array
    */
-  protected $globalState = [];
+  protected $entityCounts = [];
 
   /**
    * Keeps stack of entity referencing each other, to avoid infinite loop.
@@ -186,45 +186,6 @@ class ContentCreator {
     // Store config and sample data.
     file_put_contents($this->outputDirectory . '/_config.json', json_encode($this->config, JSON_PRETTY_PRINT));
     file_put_contents($this->outputDirectory . '/_sample_data.json', json_encode($this->sampleDataTypes, JSON_PRETTY_PRINT));
-
-    $this->globalState = [
-      'entity_index' => 0,
-      'bundle_index' => 0,
-      'entity_states' => [],
-    ];
-  }
-
-  /**
-   * Init caching values for entity type.
-   *
-   * @param string $entity_type
-   *   The entity type.
-   */
-  protected function initEntityState($entity_type) {
-    if (isset($this->globalState['entity_states'][$entity_type])) {
-      return;
-    }
-
-    $this->globalState['entity_states'][$entity_type]['count'] = 1;
-    $this->globalState['entity_states'][$entity_type]['index'] = $this->globalState['entity_index'];
-    $this->globalState['entity_index']++;
-  }
-
-  /**
-   * Init caching values for bundle type.
-   *
-   * @param string $entity_type
-   *   The entity type.
-   * @param string $bundle_type
-   *   The bundle type.
-   */
-  protected function initBundleState($entity_type, $bundle_type) {
-    if (isset($this->globalState['entity_states'][$entity_type][$bundle_type])) {
-      return;
-    }
-
-    $this->globalState['entity_states'][$entity_type][$bundle_type]['index'] = $this->globalState['bundle_index'];
-    $this->globalState['bundle_index']++;
   }
 
   /**
@@ -238,21 +199,15 @@ class ContentCreator {
     $this->init();
 
     foreach ($this->baseEntityTypes as $entity_type) {
-      $this->initEntityState($entity_type);
-
       foreach ($this->config[$entity_type]['_bundles'] as $bundle_type => $bundle) {
-        $this->initBundleState($entity_type, $bundle_type);
-
-        // TODO: TESTING!!!
-        // $instances = 100000; // more data.
         $this->createBundle($entity_type, $bundle_type, $bundle['instances']);
       }
+    }
 
-      // Close all CSV files!
-      foreach ($this->cacheCsvFileHandlers as $entity_type => $csvFiles) {
-        foreach ($csvFiles as $csvFile) {
-          fclose($csvFile);
-        }
+    // Close all CSV files!
+    foreach ($this->cacheCsvFileHandlers as $entity_type => $csvFiles) {
+      foreach ($csvFiles as $csvFile) {
+        fclose($csvFile);
       }
     }
   }
@@ -351,6 +306,14 @@ class ContentCreator {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   protected function createBundle($entity_type, $bundle_type, $num_of_instances, $parent_id = NULL, $parent_type = NULL, $parent_field_name = NULL) {
+    if (!isset($this->entityCounts[$entity_type])) {
+      $this->entityCounts[$entity_type]['_total_count'] = 1;
+    }
+
+    if (!isset($this->entityCounts[$entity_type][$bundle_type])) {
+      $this->entityCounts[$entity_type][$bundle_type] = TRUE;
+    }
+
     $unique_bundle_key = $entity_type . '_' . $bundle_type;
     if (isset($this->entityTypeReferenceNestingStack[$unique_bundle_key])) {
       return 0;
@@ -368,9 +331,9 @@ class ContentCreator {
 
     $this->initBaseEntityTables($entity_type);
 
-    $entity_type_index = $this->globalState['entity_states'][$entity_type]['index'];
-    $bundle_type_index = $this->globalState['entity_states'][$entity_type][$bundle_type]['index'];
-    $entity_type_total = $this->globalState['entity_states'][$entity_type]['count'];
+    $uuid_part_entity_type = array_search($entity_type, array_keys($this->entityCounts));
+    $uuid_part_bundle_type = array_search($bundle_type, array_keys($this->entityCounts[$entity_type]));
+    $total_entity_type_count = $this->entityCounts[$entity_type]['_total_count'];
 
     $column_mapping = $this->config[$entity_type]['_entity_definition_keys'];
 
@@ -384,9 +347,9 @@ class ContentCreator {
 
     // Fill data into CSV file.
     for ($instance_index = 0; $instance_index < $num_of_instances; $instance_index++) {
-      $variable_row_data['id'] = $entity_type_total;
-      $variable_row_data['revision'] = $entity_type_total;
-      $variable_row_data['uuid'] = sprintf("%'.08d-%'.04d-0000-0000-%'.012d", $entity_type_index, $bundle_type_index, $entity_type_total);
+      $variable_row_data['id'] = $total_entity_type_count;
+      $variable_row_data['revision'] = $total_entity_type_count;
+      $variable_row_data['uuid'] = sprintf("%'.08d-%'.04d-0000-0000-%'.012d", $uuid_part_entity_type, $uuid_part_bundle_type, $total_entity_type_count);
       $variable_row_data['label'] = $bundle_type . ' ' . $instance_index;
 
       foreach ($row_templates as $table_name => $row_template) {
@@ -402,13 +365,13 @@ class ContentCreator {
         fputcsv($this->cacheCsvFileHandlers[$entity_type][$table_name], array_values($row));
       }
 
-      $entity_type_total++;
+      $total_entity_type_count++;
     }
 
-    $this->globalState['entity_states'][$entity_type]['count'] = $entity_type_total;
+    $this->entityCounts[$entity_type]['_total_count'] = $total_entity_type_count;
 
-    $this->createBundleFields($entity_type, $bundle_type, $entity_type_total - $num_of_instances, $entity_type_total);
-    $this->createEntityReferenceFields($entity_type, $bundle_type, $entity_type_total - $num_of_instances, $entity_type_total);
+    $this->createBundleFields($entity_type, $bundle_type, $total_entity_type_count - $num_of_instances, $total_entity_type_count);
+    $this->createEntityReferenceFields($entity_type, $bundle_type, $total_entity_type_count - $num_of_instances, $total_entity_type_count);
 
     unset($this->entityTypeReferenceNestingStack[$unique_bundle_key]);
 
@@ -585,8 +548,6 @@ class ContentCreator {
     $referenced_field_definitions = $this->getBundleReferencedFieldDefinitions($entity_type, $bundle_type);
     foreach ($referenced_field_definitions as $referenced_field_definition) {
       $target_entity_type = $referenced_field_definition['target_type'];
-      $this->initEntityState($target_entity_type);
-
       $histogram = $referenced_field_definition['histogram'];
       $reference_type = $referenced_field_definition['reference_type'];
       $table_name = $referenced_field_definition['table_name'];
@@ -600,7 +561,6 @@ class ContentCreator {
           continue;
         }
 
-        $this->initBundleState($target_entity_type, $target_entity_bundle);
         $num_of_instances = $this->getRandomWeighted($histogram);
 
         // In case of recursive nesting, we are not going to add entities.
@@ -608,7 +568,7 @@ class ContentCreator {
           continue;
         }
 
-        $end_target_entity_id = $this->globalState['entity_states'][$target_entity_type]['count'];
+        $end_target_entity_id = $this->entityCounts[$target_entity_type]['_total_count'];
         $delta = 0;
 
         $row = static::$fieldTableTemplates;
