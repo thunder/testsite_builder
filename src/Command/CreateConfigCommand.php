@@ -125,7 +125,6 @@ class CreateConfigCommand extends ContainerAwareCommand {
     $this->contentCreator->createCsvFiles();
     $this->afterAction();
 
-
     $io->newLine();
     $io->comment($this->trans('commands.testsite_builder.create-config.messages.content_import'));
     $this->beforeAction();

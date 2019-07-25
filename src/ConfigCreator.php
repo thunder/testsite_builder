@@ -163,10 +163,9 @@ class ConfigCreator {
         $this->eventDispatcher->dispatch(ConfigCreatorEvents::ENTITY_BUNDLE_CREATE, new ConfigCreatorEntityBundleCreateEvent($bundle, $bundle_config));
         $configuration['bundle_type'] = $bundle_id;
 
-        // Create fields.
-        $created_fields = [];
-        foreach ($bundle_config['fields'] as $field_index => $field_instance) {
-          $field_configuration = $configuration + $field_instance;
+        foreach ($bundle_config['fields'] as $field_name => $field_instance) {
+          $field_name = str_replace('-', '_', $field_name);
+          $field_configuration = $configuration + $field_instance + ['field_name' => $field_name];
 
           /** @var \Drupal\testsite_builder\FieldTypeInterface $testbuilder_field_type */
           $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_instance['type'], $field_configuration);
@@ -176,11 +175,9 @@ class ConfigCreator {
 
           $field = $testbuilder_field_type->createField();
           $this->eventDispatcher->dispatch(ConfigCreatorEvents::FIELD_CREATE, new ConfigCreatorFieldCreateEvent($field, $field_configuration));
-
-          $created_fields[$field_index] = $field;
         }
 
-        $testbuilder_entity_type->postCreate($bundle, $bundle_config, $created_fields);
+        $testbuilder_entity_type->postCreate($bundle, $bundle_config);
       }
     }
 
