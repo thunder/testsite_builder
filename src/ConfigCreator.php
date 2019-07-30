@@ -164,7 +164,6 @@ class ConfigCreator {
         $configuration['bundle_type'] = $bundle_id;
 
         foreach ($bundle_config['fields'] as $field_name => $field_instance) {
-          $field_name = str_replace('-', '_', $field_name);
           $field_configuration = $configuration + $field_instance + ['field_name' => $field_name];
 
           /** @var \Drupal\testsite_builder\FieldTypeInterface $testbuilder_field_type */
@@ -201,6 +200,7 @@ class ConfigCreator {
       'access_token',
       'menu_link_content',
       'redirect',
+      'shortcut',
     ]);
   }
 
