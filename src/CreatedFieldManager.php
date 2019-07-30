@@ -2,7 +2,6 @@
 
 namespace Drupal\testsite_builder;
 
-use Drupal\Component\Utility\Crypt;
 use Drupal\field\FieldStorageConfigInterface;
 
 /**
@@ -18,13 +17,6 @@ class CreatedFieldManager {
   protected $createFields;
 
   /**
-   * Counts the value of field type fields on an entity type.
-   *
-   * @var array
-   */
-  protected $fieldCounter;
-
-  /**
    * Returns an existing field storage when not used in the given bundle so far.
    *
    * @param array $field_storage_config
@@ -36,28 +28,18 @@ class CreatedFieldManager {
    *   The field storage config.
    */
   public function getFieldStorage(array $field_storage_config, string $bundle) : ?FieldStorageConfigInterface {
-    $hash = $this->getHash($field_storage_config);
-    if (!empty($this->createFields[$hash][$bundle])) {
+    $field_name = $field_storage_config['field_name'];
+    $entity_type = $field_storage_config['entity_type'];
+
+    if (!empty($this->createFields[$entity_type][$field_name][$bundle])) {
       return NULL;
     }
-    if (!empty($this->createFields[$hash])) {
-      return current($this->createFields[$hash]);
-    }
-    return NULL;
-  }
 
-  /**
-   * Returns the next free field name for a given field type.
-   *
-   * @param array $field_storage_config
-   *   The field storage config.
-   *
-   * @return string
-   *   The new field name
-   */
-  public function getFieldStorageName(array $field_storage_config) : string {
-    $count = $this->fieldCounter[$field_storage_config['entity_type']][$field_storage_config['type']] ?? 0;
-    return $field_storage_config['type'] . '_' . $count;
+    if (!empty($this->createFields[$entity_type][$field_name])) {
+      return current($this->createFields[$entity_type][$field_name]);
+    }
+
+    return NULL;
   }
 
   /**
@@ -71,24 +53,7 @@ class CreatedFieldManager {
    *   The field storage config object.
    */
   public function addFieldStorage(array $field_storage_config, $bundle, FieldStorageConfigInterface $fieldStorageConfig) : void {
-    $this->createFields[$this->getHash($field_storage_config)][$bundle] = $fieldStorageConfig;
-    if (!isset($this->fieldCounter[$field_storage_config['entity_type']][$field_storage_config['type']])) {
-      $this->fieldCounter[$field_storage_config['entity_type']][$field_storage_config['type']] = 0;
-    }
-    $this->fieldCounter[$field_storage_config['entity_type']][$field_storage_config['type']]++;
-  }
-
-  /**
-   * Calculates the hash for the map.
-   *
-   * @param array $field_storage_config
-   *   The field storage config.
-   *
-   * @return string
-   *   The hash.
-   */
-  protected function getHash(array $field_storage_config) : string {
-    return Crypt::hashBase64(serialize($field_storage_config));
+    $this->createFields[$field_storage_config['entity_type']][$field_storage_config['field_name']][$bundle] = $fieldStorageConfig;
   }
 
 }

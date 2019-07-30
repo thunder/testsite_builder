@@ -68,20 +68,18 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
 
     $field_storage_config = $this->getFieldStorageConfig($this->configuration);
     if (!($field_storage = $this->createdFieldManager->getFieldStorage($field_storage_config, $this->configuration['bundle_type']))) {
-      $field_storage_config['field_name'] = $this->createdFieldManager->getFieldStorageName($field_storage_config, $this->configuration['bundle_type']);
       /** @var \Drupal\field\FieldStorageConfigInterface $field_storage */
       $field_storage = $this->entityTypeManager->getStorage('field_storage_config')->create($field_storage_config);
       $field_storage->save();
-      unset($field_storage_config['field_name']);
     }
     $this->createdFieldManager->addFieldStorage($field_storage_config, $this->configuration['bundle_type'], $field_storage);
 
     /** @var \Drupal\field\FieldConfigInterface $field_instance */
-    $field_instance = $this->entityTypeManager->getStorage('field_config')->create($this->getFieldConfig($this->configuration, $field_storage));
+    $field_instance = $this->entityTypeManager->getStorage('field_config')
+      ->create($this->getFieldConfig($this->configuration, $field_storage));
     $field_instance->save();
 
     $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig());
-
     $form_display->save();
 
     return $field_instance;
@@ -109,6 +107,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
    */
   protected function getFieldStorageConfig(array $instance) : array {
     return [
+      'field_name' => $instance['field_name'],
       'entity_type' => $this->configuration['entity_type'],
       'type' => $this->configuration['type'],
       'cardinality' => $instance['cardinality'],

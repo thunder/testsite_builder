@@ -41,9 +41,7 @@ interface EntityTypeInterface extends PluginInspectionInterface {
    *   The new bundle.
    * @param array $bundle_config
    *   Additional bundle config.
-   * @param array $created_fields
-   *   Array of fields that was created for this bundle.
    */
-  public function postCreate(ConfigEntityBundleBase $bundle, array $bundle_config, array $created_fields) : void;
+  public function postCreate(ConfigEntityBundleBase $bundle, array $bundle_config) : void;
 
 }
