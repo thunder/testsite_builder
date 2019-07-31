@@ -7,7 +7,6 @@ use Drupal\config_update\ConfigRevertInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\Core\Serialization\Yaml;
 use Drupal\field\FieldConfigInterface;
 use Drupal\field\FieldStorageConfigInterface;
 use Drupal\testsite_builder\CreatedFieldManager;
@@ -62,15 +61,13 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManagerInterface $fieldTypePluginManager, CreatedFieldManager $createdFieldManager, ConfigRevertInterface $configReverter) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManagerInterface $fieldTypePluginManager, CreatedFieldManager $createdFieldManager, ConfigRevertInterface $configReverter, array $widgetMapping) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityTypeManager = $entityTypeManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
     $this->createdFieldManager = $createdFieldManager;
     $this->configReverter = $configReverter;
-
-    $module_path = drupal_get_path('module', 'testsite_builder');
-    $this->widgetMapping = Yaml::decode(file_get_contents($module_path . DIRECTORY_SEPARATOR . 'widget_mapping.yml'));
+    $this->widgetMapping = $widgetMapping;
   }
 
   /**
@@ -84,7 +81,8 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
       $container->get('entity_type.manager'),
       $container->get('plugin.manager.field.field_type'),
       $container->get('testsite_builder.created_field_manager'),
-      $container->get('config_update.config_update')
+      $container->get('config_update.config_update'),
+      $container->get('config.factory')->get('testsite_builder.settings')->get('widget_mapping')
     );
   }
 
