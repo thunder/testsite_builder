@@ -175,7 +175,15 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
       foreach ($this->widgetMapping[$fieldType] as $mapping) {
         if (empty(array_diff_assoc($mapping['conditions'], $this->configuration))) {
           $config = $mapping['config'];
-          return $this->getWidget($config['entity_type'], $config['bundle'], $config['view_mode'], $config['field']);
+          $widgetConfig = $this->getWidget($config['entity_type'], $config['bundle'], $config['view_mode'], $config['field']);
+
+          // We fallback to default configuration for widget if mapped widget
+          // configuration is empty.
+          if (empty($widgetConfig)) {
+            break;
+          }
+
+          return $widgetConfig;
         }
       }
     }
