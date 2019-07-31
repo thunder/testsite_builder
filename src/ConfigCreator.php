@@ -4,6 +4,10 @@ namespace Drupal\testsite_builder;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\testsite_builder\Events\ConfigCreatorEntityBundleCreateEvent;
+use Drupal\testsite_builder\Events\ConfigCreatorEvents;
+use Drupal\testsite_builder\Events\ConfigCreatorFieldCreateEvent;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * The ConfigCreator class.
@@ -34,11 +38,25 @@ class ConfigCreator {
   protected $fieldTypePluginManager;
 
   /**
+   * The content creator config storage service.
+   *
+   * @var \Drupal\testsite_builder\ContentCreatorStorage
+   */
+  protected $contentCreatorStorage;
+
+  /**
    * The entity type manager service.
    *
    * @var \Drupal\testsite_builder\EntityTypePluginManager
    */
   protected $entityTypePluginManager;
+
+  /**
+   * The event dispatcher service.
+   *
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   */
+  protected $eventDispatcher;
 
   /**
    * Constructs a new ConfigCreator object.
@@ -49,11 +67,17 @@ class ConfigCreator {
    *   The field type manager service.
    * @param \Drupal\testsite_builder\EntityTypePluginManager $entityTypePluginManager
    *   The entity type manager service.
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
+   *   The event dispatcher.
+   * @param \Drupal\testsite_builder\ContentCreatorStorage $content_creator_storage
+   *   The content creator storage service.
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager) {
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager, EventDispatcherInterface $event_dispatcher, ContentCreatorStorage $content_creator_storage) {
     $this->entityTypeManager = $entityTypeManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
     $this->entityTypePluginManager = $entityTypePluginManager;
+    $this->eventDispatcher = $event_dispatcher;
+    $this->contentCreatorStorage = $content_creator_storage;
   }
 
   /**
@@ -133,18 +157,26 @@ class ConfigCreator {
         if (!$testbuilder_entity_type->isApplicable($bundle_config)) {
           continue;
         }
+
         // Create bundle.
-        $testbuilder_entity_type->createBundle($bundle_id, $bundle_config);
+        $bundle = $testbuilder_entity_type->createBundle($bundle_id, $bundle_config);
+        $this->eventDispatcher->dispatch(ConfigCreatorEvents::ENTITY_BUNDLE_CREATE, new ConfigCreatorEntityBundleCreateEvent($bundle, $bundle_config));
         $configuration['bundle_type'] = $bundle_id;
-        // Create fields.
-        foreach ($bundle_config['fields'] as $field_instance) {
+
+        foreach ($bundle_config['fields'] as $field_name => $field_instance) {
+          $field_configuration = $configuration + $field_instance + ['field_name' => $field_name];
+
           /** @var \Drupal\testsite_builder\FieldTypeInterface $testbuilder_field_type */
-          $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_instance['type'], $configuration + $field_instance);
+          $testbuilder_field_type = $this->fieldTypePluginManager->createInstance($field_instance['type'], $field_configuration);
           if (!$testbuilder_field_type->isApplicable()) {
             continue;
           }
-          $testbuilder_field_type->createField();
+
+          $field = $testbuilder_field_type->createField();
+          $this->eventDispatcher->dispatch(ConfigCreatorEvents::FIELD_CREATE, new ConfigCreatorFieldCreateEvent($field, $field_configuration));
         }
+
+        $testbuilder_entity_type->postCreate($bundle, $bundle_config);
       }
     }
 
@@ -168,6 +200,7 @@ class ConfigCreator {
       'access_token',
       'menu_link_content',
       'redirect',
+      'shortcut',
     ]);
   }
 

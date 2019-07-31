@@ -8,6 +8,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Serialization\Yaml;
+use Drupal\field\FieldConfigInterface;
 use Drupal\field\FieldStorageConfigInterface;
 use Drupal\testsite_builder\CreatedFieldManager;
 use Drupal\testsite_builder\FieldTypeInterface;
@@ -90,26 +91,26 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   /**
    * {@inheritdoc}
    */
-  public function createField() : void {
+  public function createField() : FieldConfigInterface {
     $form_display = entity_get_form_display($this->configuration['entity_type'], $this->configuration['bundle_type'], 'default');
 
     $field_storage_config = $this->getFieldStorageConfig($this->configuration);
     if (!($field_storage = $this->createdFieldManager->getFieldStorage($field_storage_config, $this->configuration['bundle_type']))) {
-      $field_storage_config['field_name'] = $this->createdFieldManager->getFieldStorageName($field_storage_config, $this->configuration['bundle_type']);
       /** @var \Drupal\field\FieldStorageConfigInterface $field_storage */
       $field_storage = $this->entityTypeManager->getStorage('field_storage_config')->create($field_storage_config);
       $field_storage->save();
-      unset($field_storage_config['field_name']);
     }
     $this->createdFieldManager->addFieldStorage($field_storage_config, $this->configuration['bundle_type'], $field_storage);
 
     /** @var \Drupal\field\FieldConfigInterface $field_instance */
-    $field_instance = $this->entityTypeManager->getStorage('field_config')->create($this->getFieldConfig($this->configuration, $field_storage));
+    $field_instance = $this->entityTypeManager->getStorage('field_config')
+      ->create($this->getFieldConfig($this->configuration, $field_storage));
     $field_instance->save();
 
-    $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig($instance + ['entity_type' => $this->configuration['entity_type']]));
-
+    $form_display->setComponent($field_instance->getName(), $this->getFieldWidgetConfig());
     $form_display->save();
+
+    return $field_instance;
   }
 
   /**
@@ -134,6 +135,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
    */
   protected function getFieldStorageConfig(array $instance) : array {
     return [
+      'field_name' => $instance['field_name'],
       'entity_type' => $this->configuration['entity_type'],
       'type' => $this->configuration['type'],
       'cardinality' => $instance['cardinality'],
@@ -158,6 +160,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
       'entity_type' => $this->configuration['entity_type'],
       'type' => $this->configuration['type'],
       'bundle' => $this->configuration['bundle_type'],
+      'required' => $this->configuration['required'] ?? FALSE,
       'settings' => [],
     ];
   }
@@ -165,21 +168,19 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   /**
    * Returns the field widget configuration.
    *
-   * @param array $instance
-   *   Array of instance settings.
-   *
    * @return array
    *   Default field widget config.
    */
-  protected function getFieldWidgetConfig(array $instance) : array {
-    if (!empty($this->widgetMapping[$this->configuration['field_type']])) {
-      foreach ($this->widgetMapping[$this->configuration['field_type']] as $mapping) {
+  protected function getFieldWidgetConfig() : array {
+    if (!empty($this->widgetMapping[$this->configuration['type']])) {
+      foreach ($this->widgetMapping[$this->configuration['type']] as $mapping) {
         $match = TRUE;
         foreach ($mapping['conditions'] as $key => $value) {
-          if (!isset($instance[$key]) || $instance[$key] != $value) {
+          if (!isset($this->configuration[$key]) || $this->configuration[$key] != $value) {
             $match = FALSE;
           }
         }
+
         if ($match) {
           $config = $mapping['config'];
           return $this->getWidget($config['entity_type'], $config['bundle'], $config['view_mode'], $config['field']);

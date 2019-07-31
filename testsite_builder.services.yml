@@ -1,7 +1,7 @@
 services:
   testsite_builder.config_creator:
     class: Drupal\testsite_builder\ConfigCreator
-    arguments: ['@entity_type.manager', '@plugin.manager.field_type_manager', '@plugin.manager.entity_type_manager']
+    arguments: ['@entity_type.manager', '@plugin.manager.field_type_manager', '@plugin.manager.entity_type_manager', '@event_dispatcher', '@testsite_builder.content_creator_storage']
 
   testsite_builder.created_field_manager:
     class: Drupal\testsite_builder\CreatedFieldManager
@@ -14,3 +14,21 @@ services:
   plugin.manager.entity_type_manager:
     class: Drupal\testsite_builder\EntityTypePluginManager
     parent: default_plugin_manager
+
+  plugin.manager.base_entity_tables:
+    class: Drupal\testsite_builder\BaseEntityTablesPluginManager
+    parent: default_plugin_manager
+
+  testsite_builder.content_creator:
+    class: Drupal\testsite_builder\ContentCreator
+    arguments: ['@testsite_builder.content_creator_storage','@database', '@plugin.manager.base_entity_tables']
+
+  testsite_builder.content_creator_storage:
+    class: Drupal\testsite_builder\ContentCreatorStorage
+    arguments: []
+
+  testsite_builder.content_creator_entity_subscriber:
+    class: Drupal\testsite_builder\Events\ContentCreatorSubscriber
+    arguments: ['@testsite_builder.content_creator_storage', '@entity_type.manager']
+    tags:
+      - { name: event_subscriber }
