@@ -20,15 +20,6 @@ entity_reference:
       field: field_media
   -
     conditions:
-      target_type: media
-      cardinality: 1
-    config:
-      entity_type: node
-      bundle: article
-      view_mode: default
-      field: field_teaser_media
-  -
-    conditions:
       target_type: taxonomy_term
       cardinality: -1
     config:
