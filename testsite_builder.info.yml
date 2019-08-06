@@ -4,3 +4,5 @@ description: 'Provide a Drupal console command to create a site from a report fi
 package: Thunder
 core: '8.x'
 php: '7.0'
+dependencies:
+  - config_update:config_update

@@ -1,0 +1,43 @@
+testsite_builder.settings:
+  type: config_object
+  label: 'Test site builder settings'
+  mapping:
+    widget_mapping:
+      type: sequence
+      label: 'Field type mapping definition'
+      sequence:
+        type: sequence
+        label: 'Mapping definitions'
+        sequence:
+          type: mapping
+          label: 'Mapping match definition'
+          mapping:
+            conditions:
+              type: mapping
+              label: 'List of conditions that should be fulfilled for mapping to be used'
+              mapping:
+                entity_type:
+                  type: string
+                  label: 'Entity type'
+                target_type:
+                  type: string
+                  label: 'Target entity type'
+                cardinality:
+                  type: integer
+                  label: 'Field cardinality'
+            config:
+              type: mapping
+              label: 'Map to widget configuration that will be used for field type'
+              mapping:
+                entity_type:
+                  type: string
+                  label: 'Entity type'
+                bundle:
+                  type: string
+                  label: 'Bundle'
+                view_mode:
+                  type: string
+                  label: 'View mode'
+                field:
+                  type: string
+                  label: 'Field name'

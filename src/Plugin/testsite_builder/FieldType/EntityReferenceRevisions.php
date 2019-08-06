@@ -17,7 +17,7 @@ class EntityReferenceRevisions extends EntityReference {
   /**
    * {@inheritdoc}
    */
-  protected function getFieldConfig($instance, FieldStorageConfigInterface $fieldStorage) : array {
+  protected function getFieldConfig(array $instance, FieldStorageConfigInterface $fieldStorage) : array {
     $config = parent::getFieldConfig($instance, $fieldStorage);
     if ($instance['target_type'] == 'paragraph') {
       $config['settings']['handler'] = 'default:paragraph';
