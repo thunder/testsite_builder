@@ -105,6 +105,19 @@ class CreateConfigCommand extends ContainerAwareCommand {
     $this->configCreator->create();
     $this->afterAction();
 
+    // List imported missing configurations.
+    foreach ($this->configCreator->getImportedConfigurations() as $base_config => $missing_configs) {
+      foreach ($missing_configs as $missing_config) {
+        $io->warningLite(
+          sprintf(
+            $this->trans('commands.testsite_builder.create-config.messages.config_create_missing_config'),
+             $missing_config,
+             $base_config
+          )
+        );
+      }
+    }
+
     $io->newLine();
     $io->comment($this->trans('commands.cache.rebuild.messages.rebuild'));
     $command = $this->getApplication()->find('cache:rebuild');

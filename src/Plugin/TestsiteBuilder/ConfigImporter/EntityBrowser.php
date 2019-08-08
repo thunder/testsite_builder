@@ -83,8 +83,13 @@ class EntityBrowser extends PluginBase implements ConfigImporterInterface, Conta
 
             // Apply adjustments for widgets if they are necessary.
             foreach ($required_config['widgets'] as &$widget_config) {
-              // TODO: Add support for other widgets.
-              if ($widget_config['id'] === 'dropzonejs_media_entity_inline_entity_form') {
+              if (in_array(
+                $widget_config['id'],
+                [
+                  'dropzonejs_media_entity_inline_entity_form',
+                  'dropzonejs_media_entity',
+                ])
+              ) {
                 $widget_config['settings']['media_type'] = $target_bundle;
                 continue;
               }

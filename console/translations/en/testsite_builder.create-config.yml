@@ -9,6 +9,7 @@ messages:
   confirm: 'Are you sure you want to delete all existing content and the configuration of most of the content entity types?'
   config_cleanup: 'Cleanup - Deleting existing bundles, fields...'
   config_create: 'Preparation - Creating new bundles and fields...'
+  config_create_missing_config: 'Imported missing config <fg=red>%s</> required by: <comment>%s</comment>'
   config_success: 'Configuration successfully created.'
   content_invalid_keep_files: 'You are not able to use --keep-content-files without --create-content option.'
   content_create: 'Creating content - Create CSV files with content for previously created configuration...'

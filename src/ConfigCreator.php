@@ -76,6 +76,13 @@ class ConfigCreator {
   protected $configImporterPluginManager;
 
   /**
+   * List of imported missing configurations.
+   *
+   * @var array
+   */
+  protected $importedConfigurations = [];
+
+  /**
    * Constructs a new ConfigCreator object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
@@ -166,6 +173,7 @@ class ConfigCreator {
    *   This class.
    *
    * @throws \Drupal\Component\Plugin\Exception\PluginException
+   * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function create(): ConfigCreator {
     foreach ($this->getEntityTypes() as $entity_type) {
@@ -199,11 +207,16 @@ class ConfigCreator {
           $this->eventDispatcher->dispatch(ConfigCreatorEvents::FIELD_CREATE, new ConfigCreatorFieldCreateEvent($field, $field_configuration));
         }
 
-        $testbuilder_entity_type->postCreate($bundle, $bundle_config);
+        // Recalculate dependencies for display form after bundle is created.
+        $form_display_entity = $this->entityTypeManager->getStorage('entity_form_display')->load(sprintf('%s.%s.%s', $entity_type, $bundle_id, 'default'));
+        $form_display_entity->calculateDependencies();
+        $form_display_entity->save();
 
-        $this->fixMissingConfiguration();
+        $testbuilder_entity_type->postCreate($bundle, $bundle_config);
       }
     }
+
+    $this->fixMissingConfiguration();
 
     return $this;
   }
@@ -226,6 +239,8 @@ class ConfigCreator {
           /** @var \Drupal\testsite_builder\ConfigImporterInterface $config_importer */
           $config_importer = $this->configImporterPluginManager->createInstance($missing_config_name->getType());
           $config_importer->importConfig($config_name, $missing_config_name->getFullName());
+
+          $this->importedConfigurations[$config_name][] = $required_config;
         }
       }
     }
@@ -250,6 +265,16 @@ class ConfigCreator {
       'redirect',
       'shortcut',
     ]);
+  }
+
+  /**
+   * Get list of imported missing configurations.
+   *
+   * @return array
+   *   The list of imported configurations.
+   */
+  public function getImportedConfigurations() {
+    return $this->importedConfigurations;
   }
 
 }
