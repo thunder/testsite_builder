@@ -56,61 +56,111 @@ class EntityBrowser extends PluginBase implements ConfigImporterInterface, Conta
    * {@inheritdoc}
    */
   public function importConfig(string $original, string $missing) {
-    $missing_config_name = ConfigName::createByFullName($missing);
     $original_config_name = ConfigName::createByFullName($original);
 
-    if ($missing_config_name->getType() == 'entity_browser' && $original_config_name->getType() == 'entity_form_display') {
-      $original_config = $this->configReverter->getFromActive($original_config_name->getType(), $original_config_name->getName());
+    // Currently we support only adjusting of configuration for field widget.
+    if ($original_config_name->getType() != 'entity_form_display') {
+      return;
+    }
 
-      foreach ($original_config['content'] as $field_name => $field_config) {
-        if (!empty($field_config['settings']['entity_browser']) && $field_config['settings']['entity_browser'] == $missing_config_name->getName()) {
-          $field_field_config = $this->configReverter->getFromActive('field_config', sprintf('%s.%s.%s', $original_config['targetEntityType'], $original_config['bundle'], $field_name));
-          if (!empty($field_field_config['settings']['handler_settings']['target_bundles'])) {
-            $target_bundles = $field_field_config['settings']['handler_settings']['target_bundles'];
+    $missing_config_name = ConfigName::createByFullName($missing);
+    $original_config = $this->configReverter->getFromActive($original_config_name->getType(), $original_config_name->getName());
 
-            // TODO: Add support for multiple bundles, if possible!
-            if (count($target_bundles) !== 1) {
-              continue;
-            }
-            $target_bundle = array_pop($target_bundles);
+    foreach ($original_config['content'] as $field_name => $field_config) {
+      // Find only field widgets with entity browser.
+      if (empty($field_config['settings']['entity_browser']) || $field_config['settings']['entity_browser'] != $missing_config_name->getName()) {
+        continue;
+      }
 
-            $new_config_name = ConfigName::createByTypeName(
-              $missing_config_name->getType(),
-              $missing_config_name->getName() . '_' . $target_bundle
-            );
-            $required_config = $this->configReverter->getFromExtension($missing_config_name->getType(), $missing_config_name->getName());
-            $required_config['name'] = $new_config_name->getName();
+      // We need target bundles in order to change settings of entity browser.
+      $field_field_config = $this->configReverter->getFromActive('field_config', sprintf('%s.%s.%s', $original_config['targetEntityType'], $original_config['bundle'], $field_name));
+      if (empty($field_field_config['settings']['handler_settings']['target_bundles'])) {
+        continue;
+      }
 
-            // Apply adjustments for widgets if they are necessary.
-            foreach ($required_config['widgets'] as &$widget_config) {
-              if (in_array(
-                $widget_config['id'],
-                [
-                  'dropzonejs_media_entity_inline_entity_form',
-                  'dropzonejs_media_entity',
-                ])
-              ) {
-                $widget_config['settings']['media_type'] = $target_bundle;
-                continue;
-              }
-            }
+      // Entity browser widget configuration expects only one media type.
+      $target_bundles = $field_field_config['settings']['handler_settings']['target_bundles'];
+      if (count($target_bundles) !== 1) {
+        continue;
+      }
 
-            $entity_browser_storage = $this->entityTypeManager->getStorage($new_config_name->getType());
-            $entity_browser = $entity_browser_storage->createFromStorageRecord($required_config);
-            $entity_browser->save();
+      $new_config_name = $this->createEntityBrowserConfig(array_pop($target_bundles), $missing_config_name);
+      $this->setEntityBrowserForField($field_name, $original_config_name, $new_config_name->getName());
+    }
+  }
 
-            $form_display_entity_storage = $this->entityTypeManager->getStorage($original_config_name->getType());
-            /** @var \Drupal\Core\Entity\Display\EntityFormDisplayInterface $entity */
-            $form_display_entity = $form_display_entity_storage->load($original_config['id']);
-            $display_content = $form_display_entity->get('content');
-            $display_content[$field_name]['settings']['entity_browser'] = $new_config_name->getName();
-            $form_display_entity->set('content', $display_content);
-            $form_display_entity->calculateDependencies();
-            $form_display_entity->save();
-          }
-        }
+  /**
+   * Set entity browser for field widget.
+   *
+   * @param string $field_name
+   *   The field name.
+   * @param \Drupal\update_helper\ConfigName $original_config_name
+   *   The original display configuration name.
+   * @param string $entity_browser_name
+   *   The entity browser for field widget.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  protected function setEntityBrowserForField(string $field_name, ConfigName $original_config_name, string $entity_browser_name) {
+    $form_display_entity_storage = $this->entityTypeManager->getStorage($original_config_name->getType());
+    /** @var \Drupal\Core\Entity\Display\EntityFormDisplayInterface $entity */
+    $form_display_entity = $form_display_entity_storage->load($original_config_name->getName());
+    $display_content = $form_display_entity->get('content');
+    $display_content[$field_name]['settings']['entity_browser'] = $entity_browser_name;
+    $form_display_entity->set('content', $display_content);
+    $form_display_entity->calculateDependencies();
+    $form_display_entity->save();
+  }
+
+  /**
+   * Create new entity browser configuration and import it when needed.
+   *
+   * @param string $target_bundle
+   *   The media entity bundle.
+   * @param \Drupal\update_helper\ConfigName $missing_config_name
+   *   The missing configuration name, used as base for creation of new one.
+   *
+   * @return \Drupal\update_helper\ConfigName
+   *   Returns newly created config name or already existing one.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  protected function createEntityBrowserConfig(string $target_bundle, ConfigName $missing_config_name): ConfigName {
+    $new_config_name = ConfigName::createByTypeName(
+      $missing_config_name->getType(),
+      $missing_config_name->getName() . '_' . $target_bundle
+    );
+
+    // Configuration for entity browser already exists, we can use it.
+    if ($this->configReverter->getFromActive($new_config_name->getType(), $new_config_name->getName()) !== FALSE) {
+      return $new_config_name;
+    }
+
+    $required_config = $this->configReverter->getFromExtension($missing_config_name->getType(), $missing_config_name->getName());
+    $required_config['name'] = $new_config_name->getName();
+
+    // Apply adjustments for widgets if they are necessary.
+    foreach ($required_config['widgets'] as &$widget_config) {
+      if (in_array(
+        $widget_config['id'],
+        [
+          'dropzonejs_media_entity_inline_entity_form',
+          'dropzonejs_media_entity',
+        ])
+      ) {
+        $widget_config['settings']['media_type'] = $target_bundle;
+        continue;
       }
     }
+
+    $entity_browser_storage = $this->entityTypeManager->getStorage($new_config_name->getType());
+    $entity_browser = $entity_browser_storage->createFromStorageRecord($required_config);
+    $entity_browser->save();
+
+    return $new_config_name;
   }
 
 }

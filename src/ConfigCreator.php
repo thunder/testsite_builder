@@ -209,8 +209,10 @@ class ConfigCreator {
 
         // Recalculate dependencies for display form after bundle is created.
         $form_display_entity = $this->entityTypeManager->getStorage('entity_form_display')->load(sprintf('%s.%s.%s', $entity_type, $bundle_id, 'default'));
-        $form_display_entity->calculateDependencies();
-        $form_display_entity->save();
+        if ($form_display_entity) {
+          $form_display_entity->calculateDependencies();
+          $form_display_entity->save();
+        }
 
         $testbuilder_entity_type->postCreate($bundle, $bundle_config);
       }
