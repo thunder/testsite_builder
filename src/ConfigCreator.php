@@ -76,13 +76,6 @@ class ConfigCreator {
   protected $configImporterPluginManager;
 
   /**
-   * List of imported missing configurations.
-   *
-   * @var array
-   */
-  protected $importedConfigurations = [];
-
-  /**
    * Constructs a new ConfigCreator object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
@@ -218,34 +211,41 @@ class ConfigCreator {
       }
     }
 
-    $this->fixMissingConfiguration();
-
     return $this;
   }
 
   /**
    * Discover and fix missing configuration.
+   *
+   * @return array
+   *   List of imported configuration dependencies per dependent configuration.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
-  protected function fixMissingConfiguration() {
-    $config_names = array_flip($this->configFactory->listAll());
-    foreach (array_keys($config_names) as $config_name) {
+  public function fixMissingConfiguration(): array {
+    /** @var array $imported_configurations */
+    $imported_configurations = [];
+
+    $all_configs = $this->configFactory->listAll();
+    foreach ($all_configs as $config) {
       $config_dependency = new ConfigEntityDependency(
-        $config_name,
-        $this->configFactory->get($config_name)->getRawData()
+        $config,
+        $this->configFactory->get($config)->getRawData()
       );
 
-      foreach ($config_dependency->getDependencies('config') as $required_config) {
-        if (!isset($config_names[$required_config])) {
-          $missing_config_name = ConfigName::createByFullName($required_config);
+      $missing_configs = array_diff($config_dependency->getDependencies('config'), $all_configs);
+      foreach ($missing_configs as $missing_config) {
+        $missing_config_name = ConfigName::createByFullName($missing_config);
 
-          /** @var \Drupal\testsite_builder\ConfigImporterInterface $config_importer */
-          $config_importer = $this->configImporterPluginManager->createInstance($missing_config_name->getType());
-          $config_importer->importConfig($config_name, $missing_config_name->getFullName());
+        /** @var \Drupal\testsite_builder\ConfigImporterInterface $config_importer */
+        $config_importer = $this->configImporterPluginManager->createInstance($missing_config_name->getType());
+        $config_importer->importConfig($config, $missing_config_name->getFullName());
 
-          $this->importedConfigurations[$config_name][] = $required_config;
-        }
+        $imported_configurations[$config][] = $missing_config;
       }
     }
+
+    return $imported_configurations;
   }
 
   /**
@@ -267,16 +267,6 @@ class ConfigCreator {
       'redirect',
       'shortcut',
     ]);
-  }
-
-  /**
-   * Get list of imported missing configurations.
-   *
-   * @return array
-   *   The list of imported configurations.
-   */
-  public function getImportedConfigurations() {
-    return $this->importedConfigurations;
   }
 
 }
