@@ -46,10 +46,14 @@ class Generic extends PluginBase implements ConfigImporterInterface, ContainerFa
   /**
    * {@inheritdoc}
    */
-  public function importConfig(string $original, string $missing) {
+  public function importConfig(string $dependent, string $missing) {
+    // By default, we will just import missing configuration because we don't
+    // know how to modify it accordingly.
     $missing_config_name = ConfigName::createByFullName($missing);
 
-    $this->configReverter->import($missing_config_name->getType(), $missing_config_name->getName());
+    if ($this->configReverter->getFromActive($missing_config_name->getType(), $missing_config_name->getName()) === FALSE) {
+      $this->configReverter->import($missing_config_name->getType(), $missing_config_name->getName());
+    }
   }
 
 }
