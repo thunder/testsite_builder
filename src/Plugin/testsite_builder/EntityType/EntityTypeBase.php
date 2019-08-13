@@ -80,6 +80,12 @@ class EntityTypeBase extends PluginBase implements EntityTypeInterface, Containe
    * {@inheritdoc}
    */
   public function postCreate(ConfigEntityBundleBase $bundle, array $bundle_config): void {
+    // Recalculate dependencies for display form after bundle is created.
+    $form_display_entity = $this->entityTypeManager->getStorage('entity_form_display')->load(sprintf('%s.%s.%s', $bundle->getEntityType()->getBundleOf(), $bundle->id(), 'default'));
+    if ($form_display_entity) {
+      $form_display_entity->calculateDependencies();
+      $form_display_entity->save();
+    }
   }
 
   /**

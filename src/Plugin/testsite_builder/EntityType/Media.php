@@ -56,6 +56,8 @@ class Media extends EntityTypeBase {
    * {@inheritdoc}
    */
   public function postCreate(ConfigEntityBundleBase $bundle, array $bundle_config): void {
+    parent::postCreate($bundle, $bundle_config);
+
     /** @var \Drupal\media\MediaTypeInterface $bundle */
     $source = $bundle->getSource();
     $config = $source->getConfiguration();
