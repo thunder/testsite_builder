@@ -6,3 +6,4 @@ core: '8.x'
 php: '7.0'
 dependencies:
   - config_update:config_update
+  - update_helper:update_helper

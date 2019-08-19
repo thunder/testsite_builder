@@ -3,10 +3,13 @@
 namespace Drupal\testsite_builder;
 
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Config\Entity\ConfigEntityDependency;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\testsite_builder\Events\ConfigCreatorEntityBundleCreateEvent;
 use Drupal\testsite_builder\Events\ConfigCreatorEvents;
 use Drupal\testsite_builder\Events\ConfigCreatorFieldCreateEvent;
+use Drupal\update_helper\ConfigName;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -59,6 +62,20 @@ class ConfigCreator {
   protected $eventDispatcher;
 
   /**
+   * The config factory service.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
+   * The config importer plugin manager.
+   *
+   * @var \Drupal\testsite_builder\ConfigImporterPluginManager
+   */
+  protected $configImporterPluginManager;
+
+  /**
    * Constructs a new ConfigCreator object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
@@ -67,15 +84,21 @@ class ConfigCreator {
    *   The field type manager service.
    * @param \Drupal\testsite_builder\EntityTypePluginManager $entityTypePluginManager
    *   The entity type manager service.
+   * @param \Drupal\testsite_builder\ConfigImporterPluginManager $configImporterPluginManager
+   *   The config importer plugin manager.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
+   *   The config factory service.
    * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
    *   The event dispatcher.
    * @param \Drupal\testsite_builder\ContentCreatorStorage $content_creator_storage
    *   The content creator storage service.
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager, EventDispatcherInterface $event_dispatcher, ContentCreatorStorage $content_creator_storage) {
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager, ConfigImporterPluginManager $configImporterPluginManager, ConfigFactoryInterface $configFactory, EventDispatcherInterface $event_dispatcher, ContentCreatorStorage $content_creator_storage) {
     $this->entityTypeManager = $entityTypeManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
     $this->entityTypePluginManager = $entityTypePluginManager;
+    $this->configImporterPluginManager = $configImporterPluginManager;
+    $this->configFactory = $configFactory;
     $this->eventDispatcher = $event_dispatcher;
     $this->contentCreatorStorage = $content_creator_storage;
   }
@@ -143,6 +166,7 @@ class ConfigCreator {
    *   This class.
    *
    * @throws \Drupal\Component\Plugin\Exception\PluginException
+   * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function create(): ConfigCreator {
     foreach ($this->getEntityTypes() as $entity_type) {
@@ -181,6 +205,40 @@ class ConfigCreator {
     }
 
     return $this;
+  }
+
+  /**
+   * Discover and fix missing configuration.
+   *
+   * @return array
+   *   List of imported configuration dependencies per dependent configuration.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  public function fixMissingConfiguration(): array {
+    /** @var array $imported_configurations */
+    $imported_configurations = [];
+
+    $all_configs = $this->configFactory->listAll();
+    foreach ($all_configs as $config) {
+      $config_dependency = new ConfigEntityDependency(
+        $config,
+        $this->configFactory->get($config)->getRawData()
+      );
+
+      $missing_configs = array_diff($config_dependency->getDependencies('config'), $all_configs);
+      foreach ($missing_configs as $missing_config) {
+        $missing_config_name = ConfigName::createByFullName($missing_config);
+
+        /** @var \Drupal\testsite_builder\ConfigImporterInterface $config_importer */
+        $config_importer = $this->configImporterPluginManager->createInstance($missing_config_name->getType());
+        $config_importer->importConfig($config, $missing_config_name->getFullName());
+
+        $imported_configurations[$config][] = $missing_config;
+      }
+    }
+
+    return $imported_configurations;
   }
 
   /**
