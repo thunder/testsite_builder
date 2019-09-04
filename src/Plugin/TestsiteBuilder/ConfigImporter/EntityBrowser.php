@@ -69,7 +69,7 @@ class EntityBrowser extends PluginBase implements ConfigImporterInterface, Conta
     $dependent_config_name = ConfigName::createByFullName($dependent);
 
     // Currently we support only adjusting of configuration for field widget.
-    if ($dependent_config_name->getType() != 'entity_form_display') {
+    if ($dependent_config_name->getType() === 'entity_form_display') {
       $this->importForFieldWidget($dependent_config_name, ConfigName::createByFullName($missing));
     }
   }
