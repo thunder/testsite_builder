@@ -1,0 +1,33 @@
+{
+    "name": "thunder/testsite_builder",
+    "description": "Provides Drupal console command to create site configuration and content based on Sampler module report",
+    "type": "drupal-module",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "ext-json": "*",
+        "ext-pcntl": "*",
+        "php": ">=7.0.0"
+    },
+    "authors": [
+        {
+            "name": "Christian Fritsch",
+            "email": "christian.fritsch@burda.com"
+        },
+        {
+            "name": "Mladen Todorovic",
+            "email": "mladen.todorovic@burda.com"
+        },
+        {
+            "name": "Daniel Bosen",
+            "email": "daniel.bosen@burda.com"
+        },
+        {
+            "name": "Volker Killesreiter",
+            "email": "volker.killesreiter@burda.com"
+        },
+        {
+            "name": "Alex Pott",
+            "email": "alex.a.pott@gmail.com"
+        }
+    ]
+}
