@@ -216,8 +216,8 @@ class ConfigCreator {
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
   public function fixMissingConfiguration(): array {
-    /** @var array $imported_configurations */
-    $imported_configurations = [];
+    /** @var array $missing_configurations */
+    $missing_configurations = [];
 
     $all_configs = $this->configFactory->listAll();
     foreach ($all_configs as $config) {
@@ -234,11 +234,11 @@ class ConfigCreator {
         $config_importer = $this->configImporterPluginManager->createInstance($missing_config_name->getType());
         $config_importer->importConfig($config, $missing_config_name->getFullName());
 
-        $imported_configurations[$config][] = $missing_config;
+        $missing_configurations[$config][] = $missing_config;
       }
     }
 
-    return $imported_configurations;
+    return $missing_configurations;
   }
 
   /**
