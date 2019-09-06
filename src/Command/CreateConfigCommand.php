@@ -89,7 +89,8 @@ class CreateConfigCommand extends ContainerAwareCommand {
     $this->configCreator->setReportData($file);
 
     $io->newLine();
-    if (!$io->confirm($this->trans('commands.testsite_builder.create-config.messages.confirm'))) {
+    $auto_yes = $input->hasOption('yes') ? $input->getOption('yes') : FALSE;
+    if (!$auto_yes && !$io->confirm($this->trans('commands.testsite_builder.create-config.messages.confirm'))) {
       $io->comment($this->trans('commands.common.questions.canceled'));
       return;
     }
