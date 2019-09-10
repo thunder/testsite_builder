@@ -26,10 +26,12 @@ class Paragraph extends Generic {
    * {@inheritdoc}
    */
   public function alterRowTemplate(array &$row_template, array $entity_state_info) {
-    if (isset($row_template['paragraphs_item_field_data'])) {
-      $row_template['paragraphs_item_field_data']['parent_id'] = $entity_state_info['parent_id'];
-      $row_template['paragraphs_item_field_data']['parent_type'] = $entity_state_info['parent_type'];
-      $row_template['paragraphs_item_field_data']['parent_field_name'] = $entity_state_info['parent_field_name'];
+    foreach (['paragraphs_item_field_data', 'paragraphs_item_revision_field_data'] as $table_name) {
+      if (isset($row_template[$table_name])) {
+        $row_template[$table_name]['parent_id'] = $entity_state_info['parent_id'];
+        $row_template[$table_name]['parent_type'] = $entity_state_info['parent_type'];
+        $row_template[$table_name]['parent_field_name'] = $entity_state_info['parent_field_name'];
+      }
     }
   }
 
