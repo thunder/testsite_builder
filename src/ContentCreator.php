@@ -613,11 +613,15 @@ class ContentCreator {
       $rev_table_name = $referenced_field_definition['rev_table_name'];
       $field_name = $referenced_field_definition['field_name'];
       for ($entity_id = $start_entity_id; $entity_id < $end_entity_id; $entity_id++) {
-        $num_of_instances = $this->getRandomWeighted($histogram);
+        $bundle_instances_for_field = $this->getEntityBundleInstancesForField($entity_type, $bundle_type, $field_name);
+        if (empty($bundle_instances_for_field)) {
+          continue;
+        }
 
         $target_entity_bundles = [];
+        $num_of_instances = $this->getRandomWeighted($histogram);
         for ($instance_index = $num_of_instances; $instance_index >= 0; $instance_index--) {
-          $target_entity_bundles[] = $this->getRandomWeighted($this->getEntityBundleInstancesForField($entity_type, $bundle_type, $field_name));
+          $target_entity_bundles[] = $this->getRandomWeighted($bundle_instances_for_field);
         }
 
         $delta = 0;
@@ -690,9 +694,9 @@ class ContentCreator {
     }
 
     $field_target_bundle_info = $this->config[$entity_type]['_bundles'][$bundle_type]['_fields'][$field_name]['_bundle_info'];
-    $this->cacheBundleInstancesForField[$entity_type][$bundle_type][$field_name] = array_filter($this->getEntityBundleInstances($field_target_bundle_info['target_type']), function ($target_entity_instances, $target_bundle_type) use ($field_target_bundle_info) {
+    $this->cacheBundleInstancesForField[$entity_type][$bundle_type][$field_name] = array_filter($this->getEntityBundleInstances($field_target_bundle_info['target_type']), function ($target_bundle_type) use ($field_target_bundle_info) {
       return empty($field_target_bundle_info['target_bundles']) || isset($field_target_bundle_info['target_bundles'][$target_bundle_type]);
-    }, ARRAY_FILTER_USE_BOTH);
+    }, ARRAY_FILTER_USE_KEY);
 
     return $this->cacheBundleInstancesForField[$entity_type][$bundle_type][$field_name];
   }
