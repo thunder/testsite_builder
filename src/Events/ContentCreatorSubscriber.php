@@ -88,6 +88,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
         'type' => $bundle_type,
         'entity_type' => $entity_type,
         'instances' => $sampler_bundle_config['instances'],
+        '_fields' => [],
       ]
     );
 
