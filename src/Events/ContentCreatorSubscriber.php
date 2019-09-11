@@ -88,6 +88,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
         'type' => $bundle_type,
         'entity_type' => $entity_type,
         'instances' => $sampler_bundle_config['instances'],
+        '_fields' => [],
       ]
     );
 
@@ -195,6 +196,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
       $bundle_field_info = [
         'reference' => $field_type,
         'target_type' => $field_config->getSetting('target_type'),
+        'target_bundles' => array_flip($sampler_field_config['target_bundles']),
         'histogram' => $sampler_field_config['histogram'],
       ];
 

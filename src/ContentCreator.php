@@ -93,6 +93,13 @@ class ContentCreator {
   protected $cacheBundleInstances = [];
 
   /**
+   * Cache of bundle instances for entity type used by reference field.
+   *
+   * @var array
+   */
+  protected $cacheBundleInstancesForField = [];
+
+  /**
    * Cache of field definitions for bundle.
    *
    * @var array
@@ -133,6 +140,13 @@ class ContentCreator {
    * @var array
    */
   protected $entityCounts = [];
+
+  /**
+   * Keeps track of created IDs per bundle.
+   *
+   * @var array
+   */
+  protected $entityBundleIDs = [];
 
   /**
    * Keeps stack of entity referencing each other, to avoid infinite loop.
@@ -182,6 +196,9 @@ class ContentCreator {
 
     $this->outputDirectory = sys_get_temp_dir() . '/' . uniqid('testsite_builder_content_creator_', TRUE);
     mkdir($this->outputDirectory, 0777, TRUE);
+
+    // Make deterministic random seed.
+    srand(0);
 
     // Store config and sample data.
     file_put_contents($this->outputDirectory . '/_config.json', json_encode($this->config, JSON_PRETTY_PRINT));
@@ -298,8 +315,8 @@ class ContentCreator {
    * @param string $parent_field_name
    *   The parent field name with references to new created entities.
    *
-   * @return int
-   *   Returns number of created entities.
+   * @return array
+   *   Returns IDs of created entities.
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginException
@@ -311,12 +328,13 @@ class ContentCreator {
     }
 
     if (!isset($this->entityCounts[$entity_type][$bundle_type])) {
-      $this->entityCounts[$entity_type][$bundle_type] = TRUE;
+      $this->entityCounts[$entity_type][$bundle_type] = 0;
     }
+    $this->entityCounts[$entity_type][$bundle_type] += $num_of_instances;
 
     $unique_bundle_key = $entity_type . '_' . $bundle_type;
     if (isset($this->entityTypeReferenceNestingStack[$unique_bundle_key])) {
-      return 0;
+      return [];
     }
 
     $entity_type_state = [
@@ -350,7 +368,7 @@ class ContentCreator {
       $variable_row_data['id'] = $total_entity_type_count;
       $variable_row_data['revision'] = $total_entity_type_count;
       $variable_row_data['uuid'] = sprintf("%'.08d-%'.04d-0000-0000-%'.012d", $uuid_part_entity_type, $uuid_part_bundle_type, $total_entity_type_count);
-      $variable_row_data['label'] = $bundle_type . ' ' . $instance_index;
+      $variable_row_data['label'] = $bundle_type . ' ' . $total_entity_type_count;
 
       foreach ($row_templates as $table_name => $row_template) {
         $row = $row_template;
@@ -365,6 +383,7 @@ class ContentCreator {
         fputcsv($this->cacheCsvFileHandlers[$entity_type][$table_name], array_values($row));
       }
 
+      $this->entityBundleIDs[$entity_type][$bundle_type][] = $total_entity_type_count;
       $total_entity_type_count++;
     }
 
@@ -375,7 +394,43 @@ class ContentCreator {
 
     unset($this->entityTypeReferenceNestingStack[$unique_bundle_key]);
 
-    return $num_of_instances;
+    return range($total_entity_type_count - $num_of_instances + 1, $total_entity_type_count);
+  }
+
+  /**
+   * Creates entity instances for referenced fields or reuse existing ones.
+   *
+   * Entities will be reused only if creation of new instance would exceed real
+   * number of instances.
+   *
+   * @param string $entity_type
+   *   The entity type.
+   * @param string $bundle_type
+   *   The bundle type.
+   * @param int $num_of_instances
+   *   The number of instances for bundle.
+   * @param int $parent_id
+   *   The parent entity id.
+   * @param string $parent_type
+   *   The parent entity type.
+   * @param string $parent_field_name
+   *   The parent field name with references to new created entities.
+   *
+   * @return array
+   *   Returns IDs of created entities or existing ones.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  protected function createBundleForReferenceField($entity_type, $bundle_type, $num_of_instances, $parent_id, $parent_type, $parent_field_name) {
+    if ($entity_type !== 'paragraph' && isset($this->entityCounts[$entity_type][$bundle_type]) && $this->entityCounts[$entity_type][$bundle_type] >= $this->config[$entity_type]['_bundles'][$bundle_type]['instances']) {
+      $instance_ids = array_rand($this->entityBundleIDs[$entity_type][$bundle_type], $num_of_instances);
+
+      return is_array($instance_ids) ? $instance_ids : [$instance_ids];
+    }
+
+    return $this->createBundle($entity_type, $bundle_type, $num_of_instances, $parent_id, $parent_type, $parent_field_name);
   }
 
   /**
@@ -547,38 +602,41 @@ class ContentCreator {
   protected function createEntityReferenceFields($entity_type, $bundle_type, $start_entity_id, $end_entity_id) {
     $referenced_field_definitions = $this->getBundleReferencedFieldDefinitions($entity_type, $bundle_type);
     foreach ($referenced_field_definitions as $referenced_field_definition) {
-      $target_entity_type = $referenced_field_definition['target_type'];
       $histogram = $referenced_field_definition['histogram'];
+      if (empty($histogram)) {
+        continue;
+      }
+
+      $target_entity_type = $referenced_field_definition['target_type'];
       $reference_type = $referenced_field_definition['reference_type'];
       $table_name = $referenced_field_definition['table_name'];
       $rev_table_name = $referenced_field_definition['rev_table_name'];
       $field_name = $referenced_field_definition['field_name'];
       for ($entity_id = $start_entity_id; $entity_id < $end_entity_id; $entity_id++) {
-        $target_entity_bundle = $this->getRandomWeighted($this->getEntityBundleInstances($target_entity_type));
-
-        // Block creation early.
-        if (isset($this->entityTypeReferenceNestingStack[$target_entity_type . '_' . $target_entity_bundle])) {
+        $bundle_instances_for_field = $this->getEntityBundleInstancesForField($entity_type, $bundle_type, $field_name);
+        if (empty($bundle_instances_for_field)) {
           continue;
         }
 
+        $target_entity_bundles = [];
         $num_of_instances = $this->getRandomWeighted($histogram);
-
-        // In case of recursive nesting, we are not going to add entities.
-        if ($this->createBundle($target_entity_type, $target_entity_bundle, $num_of_instances, $entity_id, $entity_type, $field_name) === 0) {
-          continue;
+        for ($instance_index = $num_of_instances; $instance_index >= 0; $instance_index--) {
+          $target_entity_bundles[] = $this->getRandomWeighted($bundle_instances_for_field);
         }
 
-        $end_target_entity_id = $this->entityCounts[$target_entity_type]['_total_count'];
         $delta = 0;
+        foreach ($target_entity_bundles as $target_entity_bundle) {
+          // Block creation early for deep nested references.
+          if (isset($this->entityTypeReferenceNestingStack[$target_entity_type . '_' . $target_entity_bundle])) {
+            continue;
+          }
 
-        $row = static::$fieldTableTemplates;
-        $row['bundle'] = $bundle_type;
-        $row['entity_id'] = $entity_id;
-        $row['revision_id'] = $entity_id;
-
-        for ($instance_index = $num_of_instances; $instance_index > 0; $instance_index--) {
+          $row = static::$fieldTableTemplates;
+          $row['bundle'] = $bundle_type;
+          $row['entity_id'] = $entity_id;
+          $row['revision_id'] = $entity_id;
           $row['delta'] = $delta;
-          $row['target_id'] = $end_target_entity_id - $instance_index;
+          $row['target_id'] = $this->createBundleForReferenceField($target_entity_type, $target_entity_bundle, 1, $entity_id, $entity_type, $field_name)[0];
 
           if ($reference_type === 'entity_reference_revisions') {
             $row['target_revision_id'] = $row['target_id'];
@@ -616,6 +674,34 @@ class ContentCreator {
   }
 
   /**
+   * Get list of bundle types with number of instances for field.
+   *
+   * TODO: Add support optional fields where 0 entities are referenced.
+   *
+   * @param string $entity_type
+   *   The entity type.
+   * @param string $bundle_type
+   *   The bundle type.
+   * @param string $field_name
+   *   The field name.
+   *
+   * @return array
+   *   The list of bundle types with number of instances.
+   */
+  protected function getEntityBundleInstancesForField($entity_type, $bundle_type, $field_name) {
+    if (isset($this->cacheBundleInstancesForField[$entity_type][$bundle_type][$field_name])) {
+      return $this->cacheBundleInstancesForField[$entity_type][$bundle_type][$field_name];
+    }
+
+    $field_target_bundle_info = $this->config[$entity_type]['_bundles'][$bundle_type]['_fields'][$field_name]['_bundle_info'];
+    $this->cacheBundleInstancesForField[$entity_type][$bundle_type][$field_name] = array_filter($this->getEntityBundleInstances($field_target_bundle_info['target_type']), function ($target_bundle_type) use ($field_target_bundle_info) {
+      return empty($field_target_bundle_info['target_bundles']) || isset($field_target_bundle_info['target_bundles'][$target_bundle_type]);
+    }, ARRAY_FILTER_USE_KEY);
+
+    return $this->cacheBundleInstancesForField[$entity_type][$bundle_type][$field_name];
+  }
+
+  /**
    * Generic function for weighted random.
    *
    * TODO: Speed up. Make binary tree range search. It should be: O(log(n))
@@ -628,7 +714,7 @@ class ContentCreator {
    *   Returns one of keys from list.
    */
   protected function getRandomWeighted(array $list) {
-    $rand = mt_rand(1, (int) array_sum($list));
+    $rand = rand(1, (int) array_sum($list));
 
     foreach ($list as $key => $value) {
       $rand -= $value;
@@ -660,7 +746,7 @@ class ContentCreator {
       return $this->sampleDataTypes[$type][0];
     }
 
-    return $this->sampleDataTypes[$type][mt_rand(0, count($this->sampleDataTypes[$type]) - 1)];
+    return $this->sampleDataTypes[$type][rand(0, count($this->sampleDataTypes[$type]) - 1)];
   }
 
   /**
