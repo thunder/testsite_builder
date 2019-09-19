@@ -751,8 +751,11 @@ class ContentCreator {
 
   /**
    * Import generated CSV files into database.
+   *
+   * @param bool $gracefully_for_disk_storage
+   *   Flag to free disk space when it's possible.
    */
-  public function importCsvFiles() {
+  public function importCsvFiles($gracefully_for_disk_storage = TRUE) {
     // We are trying to be nice. (fe. 8 cores -> 6 forks).
     $number_of_forks = ceil($this->getNumberOfCores() / 1.5);
 
@@ -810,6 +813,11 @@ class ContentCreator {
 
             $db_conn->query($import_query)->execute();
             $db_conn->query("commit")->execute();
+
+            // Keep used disk size down by deleting imported file.
+            if ($gracefully_for_disk_storage) {
+              unlink($csv_file_name);
+            }
           }
 
           // We have to exit from child process here!
