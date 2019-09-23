@@ -145,22 +145,24 @@ class CreateConfigCommand extends ContainerAwareCommand {
     $this->contentCreator->createCsvFiles();
     $this->afterAction();
 
+    $keep_content_files = $input->getOption('keep-content-files');
+
     $io->newLine();
     $io->comment($this->trans('commands.testsite_builder.create-config.messages.content_import'));
     $this->beforeAction();
-    $this->contentCreator->importCsvFiles(!$input->getOption('keep-content-files'));
+    $this->contentCreator->importCsvFiles($keep_content_files);
     $this->afterAction();
 
     $io->newLine();
-    if (!$input->getOption('keep-content-files')) {
+    if ($keep_content_files) {
+      $io->comment($this->trans('commands.testsite_builder.create-config.messages.content_output_directory'));
+      $io->comment($this->contentCreator->getOutputDirectory());
+    }
+    else {
       $io->comment($this->trans('commands.testsite_builder.create-config.messages.content_cleanup'));
       $this->beforeAction();
       $this->contentCreator->cleanUp();
       $this->afterAction();
-    }
-    else {
-      $io->comment($this->trans('commands.testsite_builder.create-config.messages.content_output_directory'));
-      $io->comment($this->contentCreator->getOutputDirectory());
     }
 
     $io->newLine();
