@@ -79,7 +79,11 @@ class CreateConfigCommand extends ContainerAwareCommand {
   protected function execute(InputInterface $input, OutputInterface $output) {
     $io = $this->getIo();
 
-    if ($input->getOption('keep-content-files') && !$input->getOption('create-content')) {
+    $keep_content_files = $input->getOption('keep-content-files');
+    $create_content = $input->getOption('create-content');
+
+    // Option keep-content-files is not valid without create-content.
+    if ($keep_content_files && !$create_content) {
       $io->error($this->trans('commands.testsite_builder.create-config.messages.content_invalid_keep_files'));
 
       return;
@@ -132,7 +136,7 @@ class CreateConfigCommand extends ContainerAwareCommand {
     $command->run(new ArrayInput([]), new NullOutput());
     $this->afterAction();
 
-    if (!$input->getOption('create-content')) {
+    if (!$create_content) {
       $io->newLine();
       $io->success($this->trans('commands.testsite_builder.create-config.messages.config_success'));
 
@@ -144,8 +148,6 @@ class CreateConfigCommand extends ContainerAwareCommand {
     $this->beforeAction();
     $this->contentCreator->createCsvFiles();
     $this->afterAction();
-
-    $keep_content_files = $input->getOption('keep-content-files');
 
     $io->newLine();
     $io->comment($this->trans('commands.testsite_builder.create-config.messages.content_import'));
