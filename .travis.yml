@@ -1,0 +1,30 @@
+language: php
+dist: xenial
+
+php:
+  - 7.2
+
+services:
+  - mysql
+
+cache:
+  apt: true
+  directories:
+  - "$HOME/.composer/cache"
+  - "$HOME/.drush/cache"
+  - "$HOME/.npm"
+
+branches:
+  only:
+    - master
+
+env:
+  global:
+    - PATH="$PATH:$HOME/.composer/vendor/bin"
+    - DRUPAL_TRAVIS_TEST_JAVASCRIPT=false
+
+before_install:
+  - composer global require thunder/travis
+
+script:
+  - test-drupal-project
