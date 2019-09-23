@@ -1,0 +1,41 @@
+{
+    "string": [
+        {
+            "value": "String value"
+        }
+    ],
+    "image": [
+        {
+            "target_id": "45",
+            "alt": "Random Image",
+            "title": "Image ID-1.",
+            "width": 400,
+            "height": 400
+        }
+    ],
+    "link": [
+        {
+            "title": "Thunder",
+            "uri": "https:\/\/thunder.org"
+        }
+    ],
+    "string_long": [
+        {
+            "value": "Really long\nString value\n\n"
+        }
+    ],
+    "text_with_summary": [
+        {
+            "value": "Text with summary\n\n",
+            "summary": "Text with summary\n\n",
+            "format": "plain_text"
+        }
+    ],
+    "text_long": [
+        {
+            "value": "Long text\n\n",
+            "summary": "Long text\n\n",
+            "format": "plain_text"
+        }
+    ]
+}
