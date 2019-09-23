@@ -671,8 +671,11 @@ class ContentCreator {
 
   /**
    * Import generated CSV files into database.
+   *
+   * @param bool $keep_content_files
+   *   Flag to keep CSV files after import.
    */
-  public function importCsvFiles() {
+  public function importCsvFiles($keep_content_files = FALSE) {
     // We are trying to be nice. (fe. 8 cores -> 6 forks).
     $number_of_forks = ceil($this->getNumberOfCores() / 1.5);
 
@@ -733,6 +736,11 @@ class ContentCreator {
 
             $db_conn->query($import_query)->execute();
             $db_conn->query("commit")->execute();
+
+            // Keep used disk size down by deleting imported file.
+            if (!$keep_content_files) {
+              unlink($csv_file_name);
+            }
           }
 
           // We have to exit from child process here!
