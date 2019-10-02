@@ -5,6 +5,8 @@ namespace Drupal\testsite_builder;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\Entity\ConfigEntityDependency;
+use Drupal\Core\Database\Connection;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\testsite_builder\Events\ConfigCreatorEntityBundleCreateEvent;
 use Drupal\testsite_builder\Events\ConfigCreatorEvents;
@@ -32,6 +34,13 @@ class ConfigCreator {
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
+
+  /**
+   * The entity field manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  protected $entityFieldManager;
 
   /**
    * The field type manager service.
@@ -76,10 +85,19 @@ class ConfigCreator {
   protected $configImporterPluginManager;
 
   /**
+   * The database connection.
+   *
+   * @var \Drupal\Core\Database\Connection
+   */
+  protected $database;
+
+  /**
    * Constructs a new ConfigCreator object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity manager service.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
+   *   The entity field manager service.
    * @param \Drupal\testsite_builder\FieldTypePluginManager $fieldTypePluginManager
    *   The field type manager service.
    * @param \Drupal\testsite_builder\EntityTypePluginManager $entityTypePluginManager
@@ -92,15 +110,19 @@ class ConfigCreator {
    *   The event dispatcher.
    * @param \Drupal\testsite_builder\ContentCreatorStorage $content_creator_storage
    *   The content creator storage service.
+   * @param \Drupal\Core\Database\Connection $connection
+   *   The database connection.
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager, ConfigImporterPluginManager $configImporterPluginManager, ConfigFactoryInterface $configFactory, EventDispatcherInterface $event_dispatcher, ContentCreatorStorage $content_creator_storage) {
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager, ConfigImporterPluginManager $configImporterPluginManager, ConfigFactoryInterface $configFactory, EventDispatcherInterface $event_dispatcher, ContentCreatorStorage $content_creator_storage, Connection $connection) {
     $this->entityTypeManager = $entityTypeManager;
+    $this->entityFieldManager = $entityFieldManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
     $this->entityTypePluginManager = $entityTypePluginManager;
     $this->configImporterPluginManager = $configImporterPluginManager;
     $this->configFactory = $configFactory;
     $this->eventDispatcher = $event_dispatcher;
     $this->contentCreatorStorage = $content_creator_storage;
+    $this->database = $connection;
   }
 
   /**
@@ -134,8 +156,11 @@ class ConfigCreator {
       $bundleEntityType = $definition->getBundleEntityType();
       if ($bundleEntityType) {
         // Delete all entities.
-        $entities = $this->entityTypeManager->getStorage($entity_type)->loadMultiple();
-        $this->entityTypeManager->getStorage($entity_type)->delete($entities);
+        $field_definitions = $this->entityFieldManager->getFieldStorageDefinitions($entity_type);
+        $storage = $this->entityTypeManager->getStorage($entity_type);
+        foreach ($storage->getTableMapping($field_definitions)->getTableNames() as $table) {
+          $this->database->truncate($table)->execute();
+        }
 
         // Delete fields.
         $entities = $this->entityTypeManager->getStorage('field_config')->loadByProperties(['entity_type' => $entity_type]);
