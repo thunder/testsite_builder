@@ -1,7 +1,7 @@
 services:
   testsite_builder.config_creator:
     class: Drupal\testsite_builder\ConfigCreator
-    arguments: ['@entity_type.manager', '@plugin.manager.field_type_manager', '@plugin.manager.entity_type_manager', '@testsite_builder.config_importer_manager', '@config.factory', '@event_dispatcher', '@testsite_builder.content_creator_storage']
+    arguments: ['@entity_type.manager', '@entity_field.manager', '@plugin.manager.field_type_manager', '@plugin.manager.entity_type_manager', '@testsite_builder.config_importer_manager', '@config.factory', '@event_dispatcher', '@testsite_builder.content_creator_storage', '@database']
 
   testsite_builder.created_field_manager:
     class: Drupal\testsite_builder\CreatedFieldManager
