@@ -383,7 +383,7 @@ class ContentCreator {
         fputcsv($this->cacheCsvFileHandlers[$entity_type][$table_name], array_values($row));
       }
 
-      $this->entityBundleIDs[$entity_type][$bundle_type][] = $total_entity_type_count;
+      $this->entityBundleIDs[$entity_type][$bundle_type][$total_entity_type_count] = $total_entity_type_count;
       $total_entity_type_count++;
     }
 
@@ -394,7 +394,7 @@ class ContentCreator {
 
     unset($this->entityTypeReferenceNestingStack[$unique_bundle_key]);
 
-    return range($total_entity_type_count - $num_of_instances + 1, $total_entity_type_count);
+    return range($total_entity_type_count - $num_of_instances, $total_entity_type_count - 1);
   }
 
   /**
@@ -620,7 +620,7 @@ class ContentCreator {
 
         $target_entity_bundles = [];
         $num_of_instances = $this->getRandomWeighted($histogram);
-        for ($instance_index = $num_of_instances; $instance_index >= 0; $instance_index--) {
+        for ($instance_index = 0; $instance_index < $num_of_instances; $instance_index++) {
           $target_entity_bundles[] = $this->getRandomWeighted($bundle_instances_for_field);
         }
 
