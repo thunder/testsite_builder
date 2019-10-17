@@ -230,8 +230,8 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
     /** @var \Drupal\Core\Field\FieldTypePluginManagerInterface $field_type_plugin */
     $field_type_plugin = \Drupal::service('plugin.manager.field.field_type');
 
-    /** @var \Drupal\Core\Field\FieldItemBase $data_generator */
-    $data_generator = $field_type_plugin->createInstance($field_config->getType(), [
+    /** @var \Drupal\Core\Field\FieldItemBase $field_item */
+    $field_item = $field_type_plugin->createInstance($field_config->getType(), [
       'field_definition' => $field_config,
       'name' => $field_config->getTypedData()->getName(),
       'parent' => $field_config->getTypedData()->getParent(),
@@ -239,13 +239,25 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
 
     $samples = [];
     for ($i = 0; $i < 5; $i++) {
-      $samples[] = $data_generator->generateSampleValue($field_config);
+      $samples[] = $field_item->generateSampleValue($field_config);
     }
 
     $samples = array_filter($samples);
-    if (!empty($samples)) {
-      $this->contentCreatorStorage->addSampleData($field_config->getType(), $samples);
+    if (empty($samples)) {
+      return;
     }
+
+    // Get field type schema with database columns.
+    $field_schema = $field_item->getFieldDefinition()->getFieldStorageDefinition()->getSchema();
+
+    // Sort samples to be in good order for table rows.
+    $sorted_sample_template = array_fill_keys(array_keys($field_schema['columns']), '');
+    foreach ($samples as &$sample) {
+      $sample = array_intersect_key($sample, $sorted_sample_template);
+      $sample = array_merge($sorted_sample_template, $sample);
+    }
+
+    $this->contentCreatorStorage->addSampleData($field_config->getType(), $samples);
   }
 
 }
