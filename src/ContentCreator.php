@@ -23,18 +23,6 @@ use Drupal\Core\Database\Database;
 class ContentCreator {
 
   /**
-   * Base table keys in provided ContentCreator config.
-   *
-   * @var array
-   */
-  protected static $entityBaseTableKeys = [
-    '_base_table',
-    '_rev_base_table',
-    '_data_table',
-    '_rev_data_table',
-  ];
-
-  /**
    * Field table template.
    *
    * @var array
@@ -79,11 +67,11 @@ class ContentCreator {
   protected $sampleDataTypes = [];
 
   /**
-   * Output directory for created CSV files.
+   * CSV Table writer.
    *
-   * @var string
+   * @var \Drupal\testsite_builder\CsvTableWriter
    */
-  protected $outputDirectory = '';
+  protected $csvTableWriter = NULL;
 
   /**
    * Cache of number of bundle instances for entity type.
@@ -112,13 +100,6 @@ class ContentCreator {
    * @var array
    */
   protected $cacheBundleReferencedFieldDefinition = [];
-
-  /**
-   * Keeps open CSV file handlers.
-   *
-   * @var array
-   */
-  protected $cacheCsvFileHandlers = [];
 
   /**
    * Keeps row template for base entity tables.
@@ -194,15 +175,11 @@ class ContentCreator {
     $this->config = $this->storage->getConfig();
     $this->sampleDataTypes = $this->storage->getSampleData();
 
-    $this->outputDirectory = sys_get_temp_dir() . '/' . uniqid('testsite_builder_content_creator_', TRUE);
-    mkdir($this->outputDirectory, 0777, TRUE);
+    $csv_writer = new CsvTableWriter();
+    $this->csvTableWriter = $csv_writer;
 
     // Make deterministic random seed.
     srand(0);
-
-    // Store config and sample data.
-    file_put_contents($this->outputDirectory . '/_config.json', json_encode($this->config, JSON_PRETTY_PRINT));
-    file_put_contents($this->outputDirectory . '/_sample_data.json', json_encode($this->sampleDataTypes, JSON_PRETTY_PRINT));
   }
 
   /**
@@ -221,31 +198,8 @@ class ContentCreator {
       }
     }
 
-    // Close all CSV files!
-    foreach ($this->cacheCsvFileHandlers as $entity_type => $csvFiles) {
-      foreach ($csvFiles as $csvFile) {
-        fclose($csvFile);
-      }
-    }
-  }
-
-  /**
-   * Initialize base table CSV files and other cached values.
-   *
-   * @param string $entity_type
-   *   The entity type.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\PluginException
-   */
-  protected function initBaseEntityTables($entity_type) {
-    if (isset($this->cacheCsvFileHandlers[$entity_type])) {
-      return;
-    }
-
-    foreach ($this->getBaseTableTemplates($entity_type) as $base_table_name => $columns) {
-      $this->cacheCsvFileHandlers[$entity_type][$base_table_name] = fopen($this->outputDirectory . '/' . $base_table_name . '.csv', 'w');
-      fputcsv($this->cacheCsvFileHandlers[$entity_type][$base_table_name], array_keys($columns));
-    }
+    // Output table writer data to files.
+    $this->csvTableWriter->outputAll();
   }
 
   /**
@@ -347,8 +301,6 @@ class ContentCreator {
 
     $this->entityTypeReferenceNestingStack[$unique_bundle_key] = $entity_type_state;
 
-    $this->initBaseEntityTables($entity_type);
-
     $uuid_part_entity_type = array_search($entity_type, array_keys($this->entityCounts));
     $uuid_part_bundle_type = array_search($bundle_type, array_keys($this->entityCounts[$entity_type]));
     $total_entity_type_count = $this->entityCounts[$entity_type]['_total_count'];
@@ -380,7 +332,7 @@ class ContentCreator {
           }
         }
 
-        fputcsv($this->cacheCsvFileHandlers[$entity_type][$table_name], array_values($row));
+        $this->csvTableWriter->write($table_name, array_values($row));
       }
 
       $this->entityBundleIDs[$entity_type][$bundle_type][$total_entity_type_count] = $total_entity_type_count;
@@ -456,26 +408,10 @@ class ContentCreator {
         continue;
       }
 
-      $table_name = $field['_table']['name'];
-      $rev_table_name = $field['_rev_table']['name'];
-      if (!isset($this->cacheCsvFileHandlers[$entity_type][$table_name])) {
-        $this->cacheCsvFileHandlers[$entity_type][$table_name] = fopen($this->outputDirectory . '/' . $table_name . '.csv', 'w');
-        $this->cacheCsvFileHandlers[$entity_type][$rev_table_name] = fopen($this->outputDirectory . '/' . $rev_table_name . '.csv', 'w');
-
-        $row = static::$fieldTableTemplates;
-        $values = $this->getSampleData($type, FALSE);
-        foreach ($values as $key => $value) {
-          $row[$type . '_' . $key] = $value;
-        }
-
-        fputcsv($this->cacheCsvFileHandlers[$entity_type][$table_name], array_keys($row));
-        fputcsv($this->cacheCsvFileHandlers[$entity_type][$rev_table_name], array_keys($row));
-      }
-
       $field_definitions[] = [
         'type' => $type,
-        'table_name' => $table_name,
-        'rev_table_name' => $rev_table_name,
+        'table_name' => $field['_table']['name'],
+        'rev_table_name' => $field['_rev_table']['name'],
       ];
     }
     $this->cacheBundleFieldDefinition[$entity_type][$bundle_type] = $field_definitions;
@@ -518,8 +454,8 @@ class ContentCreator {
         }
 
         $csv_row = array_values($row);
-        fputcsv($this->cacheCsvFileHandlers[$entity_type][$table_name], $csv_row);
-        fputcsv($this->cacheCsvFileHandlers[$entity_type][$rev_table_name], $csv_row);
+        $this->csvTableWriter->write($table_name, $csv_row);
+        $this->csvTableWriter->write($rev_table_name, $csv_row);
       }
     }
   }
@@ -552,30 +488,14 @@ class ContentCreator {
         continue;
       }
 
-      $histogram = $field['_bundle_info']['histogram'];
-      $table_name = $field['_table']['name'];
-      $rev_table_name = $field['_rev_table']['name'];
-      if (!isset($this->cacheCsvFileHandlers[$entity_type][$table_name])) {
-        $this->cacheCsvFileHandlers[$entity_type][$table_name] = fopen($this->outputDirectory . '/' . $table_name . '.csv', 'w');
-        $this->cacheCsvFileHandlers[$entity_type][$rev_table_name] = fopen($this->outputDirectory . '/' . $rev_table_name . '.csv', 'w');
-
-        $row = static::$fieldTableTemplates;
-        $row['target_id'] = 0;
-        $row['target_revision_id'] = 0;
-
-        $csv_row = array_keys($row);
-        fputcsv($this->cacheCsvFileHandlers[$entity_type][$table_name], $csv_row);
-        fputcsv($this->cacheCsvFileHandlers[$entity_type][$rev_table_name], $csv_row);
-      }
-
       $field_definitions[] = [
         'type' => $field['field_type'],
         'field_name' => $field['field_name'],
         'reference_type' => $field['_bundle_info']['reference'],
         'target_type' => $target_entity_type,
-        'histogram' => $histogram,
-        'table_name' => $table_name,
-        'rev_table_name' => $rev_table_name,
+        'histogram' => $field['_bundle_info']['histogram'],
+        'table_name' => $field['_table']['name'],
+        'rev_table_name' => $field['_rev_table']['name'],
       ];
     }
     $this->cacheBundleReferencedFieldDefinition[$entity_type][$bundle_type] = $field_definitions;
@@ -643,8 +563,8 @@ class ContentCreator {
           }
 
           $csv_row = array_values($row);
-          fputcsv($this->cacheCsvFileHandlers[$entity_type][$table_name], $csv_row);
-          fputcsv($this->cacheCsvFileHandlers[$entity_type][$rev_table_name], $csv_row);
+          $this->csvTableWriter->write($table_name, $csv_row);
+          $this->csvTableWriter->write($rev_table_name, $csv_row);
 
           $delta++;
         }
@@ -766,14 +686,17 @@ class ContentCreator {
       $table_pool_size[$fork_index] = 0;
     }
 
+    // Get directory where table content is persisted in CSV files.
+    $output_directory = $this->getOutputDirectory();
+
     // Prepare tables for import.
-    $list_of_files = glob($this->outputDirectory . '/*.csv');
+    $list_of_files = glob($output_directory . '/*.csv');
     // Add randomization to avoid big tables at end.
     shuffle($list_of_files);
     foreach ($list_of_files as $file) {
       $table_name = basename($file, ".csv");
 
-      $csv_file_name = $this->outputDirectory . '/' . $table_name . '.csv';
+      $csv_file_name = $output_directory . '/' . $table_name . '.csv';
       $file_size = filesize($csv_file_name);
 
       // Distribute tables based on file size.
@@ -802,7 +725,7 @@ class ContentCreator {
 
           // Import tables distributed to this fork.
           foreach ($list_of_tables[$fork_index] as $table_name) {
-            $csv_file_name = $this->outputDirectory . '/' . $table_name . '.csv';
+            $csv_file_name = $output_directory . '/' . $table_name . '.csv';
             $db_conn->query("SET autocommit = 0")->execute();
             $import_query = "LOAD DATA INFILE '{$csv_file_name}'" . PHP_EOL .
               "IGNORE INTO TABLE `{$table_name}`" . PHP_EOL .
@@ -898,15 +821,14 @@ class ContentCreator {
    *   Returns the output directory.
    */
   public function getOutputDirectory() {
-    return $this->outputDirectory;
+    return $this->csvTableWriter->getOutputDirectory();
   }
 
   /**
    * Remove created temporally output folder.
    */
   public function cleanUp() {
-    array_map('unlink', glob("{$this->outputDirectory}/*"));
-    rmdir($this->outputDirectory);
+    $this->csvTableWriter->cleanAll();
   }
 
 }
