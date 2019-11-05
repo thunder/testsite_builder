@@ -8,16 +8,6 @@ use Drupal\Core\Database\Database;
 /**
  * Class ContentCreator.
  *
- * *** IMPORTANT ***
- * - we need GRANT:
- *    GRANT FILE on *.* to 'drupaluser'@'localhost'
- * - we need disabled "secure-file-priv":
- *    [mysqld]
- *    secure-file-priv=""
- *
- * TODO:
- *   - add logging (fastest solution is "error_log")
- *
  * @package Drupal\testsite_builder
  */
 class ContentCreator {
