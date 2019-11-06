@@ -225,6 +225,7 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
    *   The field configuration.
    *
    * @throws \Drupal\Component\Plugin\Exception\PluginException
+   * @throws \Drupal\Core\Entity\EntityStorageException
    */
   protected function createSampleDataForField(FieldConfigInterface $field_config) {
     /** @var \Drupal\Core\Field\FieldTypePluginManagerInterface $field_type_plugin */
@@ -239,7 +240,15 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
 
     $samples = [];
     for ($i = 0; $i < 5; $i++) {
-      $samples[] = $field_item->generateSampleValue($field_config);
+      $sample = $field_item->generateSampleValue($field_config);
+      // Image files are created temporally. We need them permanent.
+      if ($field_config->getType() == 'image') {
+        /** @var \Drupal\file\FileInterface $file */
+        $file = $this->entityTypeManager->getStorage('file')->load($sample['target_id']);
+        $file->setPermanent();
+        $file->save();
+      }
+      $samples[] = $sample;
     }
 
     $samples = array_filter($samples);

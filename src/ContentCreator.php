@@ -72,13 +72,6 @@ class ContentCreator {
   protected $config = [];
 
   /**
-   * List of sample data types with generated data.
-   *
-   * @var array
-   */
-  protected $sampleDataTypes = [];
-
-  /**
    * Output directory for created CSV files.
    *
    * @var string
@@ -192,7 +185,6 @@ class ContentCreator {
    */
   protected function init() {
     $this->config = $this->storage->getConfig();
-    $this->sampleDataTypes = $this->storage->getSampleData();
 
     $this->outputDirectory = sys_get_temp_dir() . '/' . uniqid('testsite_builder_content_creator_', TRUE);
     mkdir($this->outputDirectory, 0777, TRUE);
@@ -201,8 +193,8 @@ class ContentCreator {
     srand(0);
 
     // Store config and sample data.
-    file_put_contents($this->outputDirectory . '/_config.json', json_encode($this->config, JSON_PRETTY_PRINT));
-    file_put_contents($this->outputDirectory . '/_sample_data.json', json_encode($this->sampleDataTypes, JSON_PRETTY_PRINT));
+    $this->storage->storeConfigToFile($this->outputDirectory . '/_config.json');
+    $this->storage->storeSampleDataToFile($this->outputDirectory . '/_sample_data.json');
   }
 
   /**
@@ -343,6 +335,7 @@ class ContentCreator {
       'parent_id' => $parent_id,
       'parent_type' => $parent_type,
       'parent_field_name' => $parent_field_name,
+      'content_creator_storage' => $this->storage,
     ];
 
     $this->entityTypeReferenceNestingStack[$unique_bundle_key] = $entity_type_state;
@@ -463,7 +456,7 @@ class ContentCreator {
         $this->cacheCsvFileHandlers[$entity_type][$rev_table_name] = fopen($this->outputDirectory . '/' . $rev_table_name . '.csv', 'w');
 
         $row = static::$fieldTableTemplates;
-        $values = $this->getSampleData($type, FALSE);
+        $values = $this->storage->getSampleDataType($type, FALSE);
         foreach ($values as $key => $value) {
           $row[$type . '_' . $key] = $value;
         }
@@ -512,7 +505,7 @@ class ContentCreator {
         $row['entity_id'] = $entity_id;
         $row['revision_id'] = $entity_id;
 
-        $values = $this->getSampleData($type);
+        $values = $this->storage->getSampleDataType($type);
         foreach ($values as $key => $value) {
           $row[$type . '_' . $key] = $value;
         }
@@ -722,31 +715,6 @@ class ContentCreator {
         return $key;
       }
     }
-  }
-
-  /**
-   * Get sample data used to generate database entries.
-   *
-   * TODO: We call this a lot. Investigate if performance can be improved.
-   *
-   * @param string $type
-   *   The data type.
-   * @param bool $random
-   *   Flag if random value should be returned or not.
-   *
-   * @return mixed
-   *   Returns sample data.
-   */
-  protected function getSampleData($type, $random = TRUE) {
-    if (!isset($this->sampleDataTypes[$type])) {
-      return [];
-    }
-
-    if (!$random) {
-      return $this->sampleDataTypes[$type][0];
-    }
-
-    return $this->sampleDataTypes[$type][rand(0, count($this->sampleDataTypes[$type]) - 1)];
   }
 
   /**
