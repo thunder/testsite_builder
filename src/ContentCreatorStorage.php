@@ -118,4 +118,29 @@ class ContentCreatorStorage {
     file_put_contents($file_name, json_encode($this->sampleDataStorage, JSON_PRETTY_PRINT));
   }
 
+  /**
+   * Get sample data used to generate database entries.
+   *
+   * TODO: We call this a lot. Investigate if performance can be improved.
+   *
+   * @param string $type
+   *   The data type.
+   * @param bool $random
+   *   Flag if random value should be returned or not.
+   *
+   * @return mixed
+   *   Returns sample data.
+   */
+  public function getSampleDataType($type, $random = TRUE) {
+    if (!isset($this->sampleDataStorage[$type])) {
+      return [];
+    }
+
+    if (!$random) {
+      return $this->sampleDataStorage[$type][0];
+    }
+
+    return $this->sampleDataStorage[$type][rand(0, count($this->sampleDataStorage[$type]) - 1)];
+  }
+
 }
