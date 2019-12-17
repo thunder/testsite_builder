@@ -325,7 +325,6 @@ class ContentCreator {
       'parent_id' => $parent_id,
       'parent_type' => $parent_type,
       'parent_field_name' => $parent_field_name,
-      'content_creator_storage' => $this->storage,
     ];
 
     $this->entityTypeReferenceNestingStack[$unique_bundle_key] = $entity_type_state;
@@ -338,10 +337,12 @@ class ContentCreator {
 
     $column_mapping = $this->config[$entity_type]['_entity_definition_keys'];
 
+    // Get entity tables plugin.
+    $entity_tables_plugin = $this->getBaseEntityTablesPlugin($entity_type);
+
     // Prepare row arrays.
     $row_templates = $this->getBaseTableTemplates($entity_type);
-    $this->getBaseEntityTablesPlugin($entity_type)
-      ->alterRowTemplate($row_templates, $entity_type_state);
+    $entity_tables_plugin->alterRowTemplate($row_templates, $entity_type_state);
     $variable_row_data = [
       'bundle' => $bundle_type,
     ];
@@ -362,6 +363,9 @@ class ContentCreator {
             continue;
           }
         }
+
+        // Alter variable part of row.
+        $entity_tables_plugin->alterRow($row, $table_name, $this->storage);
 
         fputcsv($this->cacheCsvFileHandlers[$entity_type][$table_name], array_values($row));
       }

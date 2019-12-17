@@ -143,4 +143,23 @@ class ContentCreatorStorage {
     return $this->sampleDataStorage[$type][rand(0, count($this->sampleDataStorage[$type]) - 1)];
   }
 
+  /**
+   * Get sample data used to generate database entries with mod of provided ID.
+   *
+   * @param string $type
+   *   The data type.
+   * @param int $id
+   *   The ID of entry we are fetching sample data for.
+   *
+   * @return mixed
+   *   Returns sample data.
+   */
+  public function getModSampleDataType($type, $id) {
+    if (!isset($this->sampleDataStorage[$type])) {
+      return [];
+    }
+
+    return $this->sampleDataStorage[$type][$id % count($this->sampleDataStorage[$type])];
+  }
+
 }

@@ -27,4 +27,16 @@ interface BaseEntityTablesInterface extends PluginInspectionInterface {
    */
   public function alterRowTemplate(array &$row_template, array $entity_state_info);
 
+  /**
+   * Alter row data.
+   *
+   * @param array $row
+   *   Reference to row.
+   * @param string $table_name
+   *   The table name of the row.
+   * @param \Drupal\testsite_builder\ContentCreatorStorage $content_creator_storage
+   *   The content creator storage.
+   */
+  public function alterRow(array &$row, $table_name, ContentCreatorStorage $content_creator_storage);
+
 }

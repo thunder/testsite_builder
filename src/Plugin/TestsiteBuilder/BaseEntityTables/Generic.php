@@ -3,6 +3,7 @@
 namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\BaseEntityTables;
 
 use Drupal\testsite_builder\BaseEntityTablesBase;
+use Drupal\testsite_builder\ContentCreatorStorage;
 
 /**
  * Generic entity type plugin.
@@ -48,5 +49,10 @@ class Generic extends BaseEntityTablesBase {
    * {@inheritdoc}
    */
   public function alterRowTemplate(array &$row_template, array $entity_state_info) {}
+
+  /**
+   * {@inheritdoc}
+   */
+  public function alterRow(array &$row, $table_name, ContentCreatorStorage $content_creator_storage) {}
 
 }
