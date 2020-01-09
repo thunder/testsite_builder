@@ -130,6 +130,22 @@ class CreateConfigCommand extends ContainerAwareCommand {
     }
 
     $io->newLine();
+    $io->comment($this->trans('commands.testsite_builder.create-config.messages.config_create_from_template'));
+    $this->beforeAction();
+    $imported_templates = $this->configCreator->importTemplateConfigurations();
+    $this->afterAction();
+
+    // List imported templates.
+    foreach ($imported_templates as $template_file) {
+      $io->warningLite(
+        sprintf(
+          $this->trans('commands.testsite_builder.create-config.messages.config_create_imported_template'),
+          $template_file
+        )
+      );
+    }
+
+    $io->newLine();
     $io->comment($this->trans('commands.cache.rebuild.messages.rebuild'));
     $command = $this->getApplication()->find('cache:rebuild');
     $this->beforeAction();
