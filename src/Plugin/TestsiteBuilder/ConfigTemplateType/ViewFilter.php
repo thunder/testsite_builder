@@ -2,7 +2,9 @@
 
 namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\ConfigTemplateType;
 
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\testsite_builder\ConfigTemplateMerge;
 use Drupal\views\ViewsData;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -32,59 +34,107 @@ class ViewFilter extends Generic {
   protected $viewsData;
 
   /**
+   * Then entity field manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  protected $entityFieldManager;
+
+  /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, ViewsData $views_data) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, ViewsData $views_data, EntityFieldManagerInterface $entity_field_manager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->entityTypeManager = $entity_type_manager;
     $this->viewsData = $views_data;
+    $this->entityFieldManager = $entity_field_manager;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static($configuration, $plugin_id, $plugin_definition, $container->get('entity_type.manager'), $container->get('views.views_data'));
+    return new static($configuration, $plugin_id, $plugin_definition, $container->get('entity_type.manager'), $container->get('views.views_data'), $container->get('entity_field.manager'));
+  }
+
+  /**
+   * Applies plugin specific configuration.
+   *
+   * @param string $entity_type
+   *   The entity type.
+   * @param string $bundle
+   *   The bundle.
+   * @param string $field_name
+   *   The field name.
+   * @param mixed $config
+   *   The plugin configuration.
+   *
+   * @return mixed
+   *   Returns plugin configuration or FALSE.
+   */
+  protected function applyPlugConfiguration(string $entity_type, string $bundle, string $field_name, $config) {
+    // Handles: "taxonomy_index_tid" - plugin.
+    if ($config['plugin_id'] === 'taxonomy_index_tid') {
+      $field_definitions = $this->entityFieldManager->getFieldDefinitions($entity_type, $bundle);
+
+      if (empty($field_definitions[$field_name])) {
+        return FALSE;
+      }
+
+      $field_settings = $field_definitions[$field_name]->getSettings();
+      if (empty($field_settings['handler_settings']['target_bundles'])) {
+        return FALSE;
+      }
+
+      reset($field_settings['handler_settings']['target_bundles']);
+      $config['vid'] = key($field_settings['handler_settings']['target_bundles']);
+    }
+
+    return $config;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getConfigForField(string $entity_type, string $field_name, string $source_field_name, array $source_definition) {
-    $filter_definition = $source_definition[$source_field_name];
-    if (empty($filter_definition)) {
-      return parent::getConfigForField($entity_type, $field_name, $source_field_name, $source_definition);
+  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+    if (empty($source_field_config)) {
+      return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+    }
+
+    // Skip configuration if plugin configuration is not changed accordingly.
+    $source_field_config = $this->applyPlugConfiguration($entity_type, $bundle, $field_name, $source_field_config);
+    if ($source_field_config === FALSE) {
+      return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
     }
 
     /** @var \Drupal\Core\Entity\Sql\SqlEntityStorageInterface $storage */
     $storage = $this->entityTypeManager->getStorage($entity_type);
 
-    $filter_definition['id'] = $field_name;
-    $filter_definition['table'] = $storage->getTableMapping()
+    $source_field_config['id'] = $field_name;
+    $source_field_config['table'] = $storage->getTableMapping()
       ->getFieldTableName($field_name);
-    $filter_definition['field'] = $field_name;
-    $filter_definition['entity_field'] = $field_name;
-    $filter_definition['expose']['label'] = "Filter: {$field_name}";
-    $filter_definition['expose']['identifier'] = $field_name;
-    $filter_definition['expose']['operator_id'] = "{$field_name}_op";
-    $filter_definition['expose']['operator'] = "{$field_name}_op";
-    $filter_definition['group_info']['label'] = "Filter: {$field_name}";
-    $filter_definition['group_info']['identifier'] = $field_name;
+    $source_field_config['field'] = $field_name;
+    $source_field_config['entity_field'] = $field_name;
+
+    $source_field_config['expose']['label'] = "Filter: {$field_name}";
+    $source_field_config['expose']['identifier'] = $field_name;
+    $source_field_config['expose']['operator_id'] = "{$field_name}_op";
+    $source_field_config['expose']['operator'] = "{$field_name}_op";
+
+    $source_field_config['group_info']['label'] = "Filter: {$field_name}";
+    $source_field_config['group_info']['identifier'] = $field_name;
 
     // Handling of non-base fields.
-    if (strpos($filter_definition['table'], '__')) {
-      $views_data = $this->viewsData->get($filter_definition['table']);
-      $filter_definition['field'] = $views_data[$field_name]['field']['real field'];
+    if (strpos($source_field_config['table'], "{$entity_type}__") === 0) {
+      $views_data = $this->viewsData->get($source_field_config['table']);
+      $source_field_config['field'] = $views_data[$field_name]['field']['real field'];
 
-      unset($filter_definition['entity_type']);
-      unset($filter_definition['entity_field']);
+      unset($source_field_config['entity_type']);
+      unset($source_field_config['entity_field']);
     }
 
-    return [
-      $field_name,
-      $filter_definition,
-    ];
+    return new ConfigTemplateMerge(ConfigTemplateMerge::ADD_KEY, $source_field_config, $field_name);
   }
 
 }

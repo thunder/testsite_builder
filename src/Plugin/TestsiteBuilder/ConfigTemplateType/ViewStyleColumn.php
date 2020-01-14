@@ -2,6 +2,8 @@
 
 namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\ConfigTemplateType;
 
+use Drupal\testsite_builder\ConfigTemplateMerge;
+
 /**
  * View style column config template type plugin.
  *
@@ -16,8 +18,8 @@ class ViewStyleColumn extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigForField(string $entity_type, string $field_name, string $source_field_name, array $source_definition) {
-    return [$field_name, $field_name];
+  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+    return new ConfigTemplateMerge(ConfigTemplateMerge::ADD_KEY, $field_name, $field_name);
   }
 
 }

@@ -3,6 +3,7 @@
 namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\ConfigTemplateType;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\testsite_builder\ConfigTemplateMerge;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -42,25 +43,21 @@ class ViewField extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigForField(string $entity_type, string $field_name, string $source_field_name, array $source_definition) {
-    $field_definition = $source_definition[$source_field_name];
-    if (empty($field_definition)) {
-      return parent::getConfigForField($entity_type, $field_name, $source_field_name, $source_definition);
+  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+    if (empty($source_field_config)) {
+      return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
     }
 
     /** @var \Drupal\Core\Entity\Sql\SqlEntityStorageInterface $storage */
     $storage = $this->entityTypeManager->getStorage($entity_type);
 
-    $field_definition['id'] = $field_name;
-    $field_definition['table'] = $storage->getTableMapping()->getFieldTableName($field_name);
-    $field_definition['field'] = $field_name;
-    $field_definition['entity_field'] = $field_name;
-    $field_definition['label'] = "Label: {$field_name}";
+    $source_field_config['id'] = $field_name;
+    $source_field_config['table'] = $storage->getTableMapping()->getFieldTableName($field_name);
+    $source_field_config['field'] = $field_name;
+    $source_field_config['entity_field'] = $field_name;
+    $source_field_config['label'] = "Label: {$field_name}";
 
-    return [
-      $field_name,
-      $field_definition,
-    ];
+    return new ConfigTemplateMerge(ConfigTemplateMerge::ADD_KEY, $source_field_config, $field_name);
   }
 
 }

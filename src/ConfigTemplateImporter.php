@@ -14,10 +14,6 @@ use Drupal\update_helper\ConfigName;
 /**
  * Config template importer.
  *
- * TODO: 1. Add support for custom configuration in mapping yaml file.
- * TODO:    - for example: filter/columns configuration for field type mapping.
- * TODO: 2. Add support for cardinality in field type matching rules.
- *
  * @package Drupal\testsite_builder
  */
 class ConfigTemplateImporter {
@@ -179,60 +175,11 @@ class ConfigTemplateImporter {
       $config = $this->copyFromSource($source_config, $copy_config_key['from'], $config, $copy_config_key['to']);
     }
 
-    /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $bundle_fields */
-    $bundle_fields = $this->fieldManager->getFieldDefinitions($this->mappingConfig['entity_type'], $bundle);
+    // Generate dynamic configuration for fields.
+    $config = $this->applyConfigurationForFields($entity_type, $bundle, $config, $dynamic_field_mapping_definitions);
 
-    foreach ($bundle_fields as $field_name => $field_definition) {
-      // TODO: Add support for "filed_type_mapping" to include/exclude some
-      // TODO: dynamically generated parts (fe. filter, columns, etc.)
-      // TODO: It should be defined in field type mapping rule.
-      foreach ($this->mappingConfig['filed_type_mapping'] as $filed_map) {
-        // Skip computed fields.
-        if ($field_definition->isComputed()) {
-          continue;
-        }
-
-        if ($this->matchesFiledTypeMapping($field_definition, $filed_map)) {
-          foreach ($dynamic_field_mapping_definitions as $dynamic_field_definition) {
-            list($key, $value) = $this->configTemplateTypeManager->createInstance($dynamic_field_definition['type'])
-              ->getConfigForField($entity_type, $field_name, $filed_map['source_field'], (empty($dynamic_field_definition['resource'])) ? [] : $dynamic_field_definition['resource']);
-
-            // TODO: Add merge tactic in config template type result. Then we
-            // TODO: use same logic for "getConfigForField" and
-            // TODO: "getConfigForBundle" results.
-            if (empty($key) && empty($value)) {
-              continue;
-            }
-
-            $path = $dynamic_field_definition['path'];
-            if (empty($key)) {
-              $array_value = NestedArray::getValue($config, $path);
-              $array_value[] = $value;
-              NestedArray::setValue($config, $path, $array_value);
-
-              continue;
-            }
-
-            $path[] = $key;
-            NestedArray::setValue($config, $path, $value);
-          }
-
-          break;
-        }
-      }
-    }
-
-    foreach ($dynamic_view_definitions as $dynamic_view_definition) {
-      list($key, $value) = $this->configTemplateTypeManager->createInstance($dynamic_view_definition['type'])
-        ->getConfigForBundle($bundle, (empty($dynamic_view_definition['resource'])) ? [] : $dynamic_view_definition['resource']);
-
-      if (empty($key) && empty($value)) {
-        continue;
-      }
-
-      $path = $dynamic_view_definition['path'];
-      NestedArray::setValue($config, $path, $value);
-    }
+    // Generate dynamic configuration for bundle.
+    $config = $this->applyConfigurationForBundle($bundle, $config, $dynamic_view_definitions);
 
     // Copy post generate.
     foreach ($this->mappingConfig['post_generate_clone'] as $copy_config_key) {
@@ -246,34 +193,184 @@ class ConfigTemplateImporter {
   }
 
   /**
+   * Add dynamic configurations for field.
+   *
+   * @param string $entity_type
+   *   The entity type.
+   * @param string $bundle
+   *   The bundle ID.
+   * @param array $config
+   *   The configuration.
+   * @param array $dynamic_field_mapping_definitions
+   *   The dynamic field mapping definitions from template file.
+   *
+   * @return array
+   *   Returns configuration with new changes.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  protected function applyConfigurationForFields($entity_type, $bundle, array $config, array $dynamic_field_mapping_definitions) {
+    /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $bundle_fields */
+    $bundle_fields = $this->fieldManager->getFieldDefinitions($this->mappingConfig['entity_type'], $bundle);
+    foreach ($bundle_fields as $field_name => $field_definition) {
+      // Skip computed fields.
+      if ($field_definition->isComputed()) {
+        continue;
+      }
+
+      // Get field mapping if available, otherwise skip field.
+      $field_map = $this->findFieldMapping($field_definition);
+      if ($field_map === FALSE) {
+        continue;
+      }
+
+      foreach ($dynamic_field_mapping_definitions as $dynamic_field_definition) {
+        // Check exclude field definition types.
+        if (isset($field_map['exclude_generation_type']) && in_array($dynamic_field_definition['type'], $field_map['exclude_generation_type'])) {
+          continue;
+        }
+
+        // Use custom source_field definition.
+        $custom_generation_type_config_template_merge = $this->getCustomTemplateMerge($entity_type, $bundle, $field_name, $dynamic_field_definition['type'], empty($field_map['custom_generation_types']) ? [] : $field_map['custom_generation_types']);
+        if ($custom_generation_type_config_template_merge !== FALSE) {
+          $config = $custom_generation_type_config_template_merge->applyMerge($config, $dynamic_field_definition['path']);
+
+          continue;
+        }
+
+        // Use configuration from source config.
+        $source_field_config = (empty($dynamic_field_definition['resource'][$field_map['source_field']])) ? [] : $dynamic_field_definition['resource'][$field_map['source_field']];
+
+        /** @var \Drupal\testsite_builder\ConfigTemplateTypeInterface $config_template_type_plugin */
+        $config_template_type_plugin = $this->configTemplateTypeManager->createInstance($dynamic_field_definition['type']);
+
+        /** @var \Drupal\testsite_builder\ConfigTemplateMerge $config_template_merge */
+        $config_template_merge = $config_template_type_plugin->getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+        $config = $config_template_merge->applyMerge($config, $dynamic_field_definition['path']);
+      }
+    }
+
+    return $config;
+  }
+
+  /**
+   * Searches for field mapping.
+   *
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
+   *   The field definition.
+   *
+   * @return array|bool
+   *   Returns field mapping or false if not found.
+   */
+  protected function findFieldMapping(FieldDefinitionInterface $field_definition) {
+    foreach ($this->mappingConfig['field_type_mapping'] as $field_map) {
+      if ($this->matchesFieldTypeMapping($field_definition, $field_map)) {
+        return $field_map;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Applies dynamic configuration for bundle.
+   *
+   * @param string $bundle
+   *   The bundle name.
+   * @param array $config
+   *   The configuration.
+   * @param array $dynamic_view_definitions
+   *   The dynamic definitions from template file for bundle.
+   *
+   * @return array
+   *   Returns configuration with new changes.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  private function applyConfigurationForBundle($bundle, array $config, array $dynamic_view_definitions) {
+    foreach ($dynamic_view_definitions as $dynamic_view_definition) {
+      $source_view_config = (empty($dynamic_view_definition['resource'])) ? [] : $dynamic_view_definition['resource'];
+
+      /** @var \Drupal\testsite_builder\ConfigTemplateTypeInterface $config_template_type_plugin */
+      $config_template_type_plugin = $this->configTemplateTypeManager->createInstance($dynamic_view_definition['type']);
+
+      /** @var \Drupal\testsite_builder\ConfigTemplateMerge $config_template_merge */
+      $config_template_merge = $config_template_type_plugin->getConfigChangesForBundle($bundle, $source_view_config);
+      $config = $config_template_merge->applyMerge($config, $dynamic_view_definition['path']);
+    }
+
+    return $config;
+  }
+
+  /**
+   * Get template merge for custom config generation type.
+   *
+   * @param string $entity_type
+   *   The entity type.
+   * @param string $bundle
+   *   The bundle.
+   * @param string $field_name
+   *   The field name.
+   * @param string $generation_type
+   *   The field generation type.
+   * @param array $custom_generation_types
+   *   Custom configuration for generation type.
+   *
+   * @return \Drupal\testsite_builder\ConfigTemplateMerge|bool
+   *   Returns config template merge if custom config is found or false.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  protected function getCustomTemplateMerge($entity_type, $bundle, $field_name, $generation_type, array $custom_generation_types) {
+    foreach ($custom_generation_types as $custom_generation_type_definition) {
+      if ($custom_generation_type_definition['type'] === $generation_type) {
+        $source_field_config = $custom_generation_type_definition['source'];
+
+        /** @var \Drupal\testsite_builder\ConfigTemplateTypeInterface $config_template_type_plugin */
+        $config_template_type_plugin = $this->configTemplateTypeManager->createInstance($generation_type);
+
+        /** @var \Drupal\testsite_builder\ConfigTemplateMerge $config_template_merge */
+        return $config_template_type_plugin->getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+      }
+    }
+
+    return FALSE;
+  }
+
+  /**
    * Match field definition to field map.
    *
    * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
    *   The field definition.
-   * @param array $filed_map_definition
+   * @param array $field_map_definition
    *   The field map configuration.
    *
    * @return bool
    *   Returns if field matches mapping.
    */
-  protected function matchesFiledTypeMapping(FieldDefinitionInterface $field_definition, array $filed_map_definition) {
-    if ($field_definition->getType() !== $filed_map_definition['type']) {
+  protected function matchesFieldTypeMapping(FieldDefinitionInterface $field_definition, array $field_map_definition) {
+    if ($field_definition->getType() !== $field_map_definition['type']) {
       return FALSE;
     }
 
-    if (isset($filed_map_definition['extra']['settings'])) {
-      $settings = $field_definition->getSettings();
+    if (empty($field_map_definition['match_rules'])) {
+      return TRUE;
+    }
 
-      $is_matched = TRUE;
-      foreach ($filed_map_definition['extra']['settings'] as $key => $value) {
-        if ($settings[$key] !== $value) {
-          $is_matched = FALSE;
+    foreach ($field_map_definition['match_rules'] as $rule_id => $definition) {
+      if ($rule_id === 'storage_settings') {
+        $storage_settings = $field_definition->getFieldStorageDefinition()
+          ->getSettings();
 
-          break;
+        foreach ($definition as $key => $value) {
+          if ($storage_settings[$key] !== $value) {
+            return FALSE;
+          }
         }
       }
 
-      return $is_matched;
+      if ($rule_id === 'cardinality' && $field_definition->getFieldStorageDefinition()->getCardinality() !== $definition) {
+        return FALSE;
+      }
     }
 
     return TRUE;
@@ -355,9 +452,6 @@ class ConfigTemplateImporter {
         ->setData($this->createConfigForBundle($entity_type, $bundle, $source_config, $dynamic_field_mapping_definitions, $dynamic_view_definitions))
         ->save(TRUE);
     }
-
-    // TODO: Add intersection generation. That will generate config for fields
-    // TODO: available in all bundles. Probably only base fields.
   }
 
 }

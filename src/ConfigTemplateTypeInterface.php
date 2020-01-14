@@ -14,29 +14,29 @@ interface ConfigTemplateTypeInterface extends PluginInspectionInterface {
    *
    * @param string $entity_type
    *   The entity type.
+   * @param string $bundle
+   *   The bundle.
    * @param string $field_name
    *   The field name.
-   * @param string $source_field_name
-   *   The mapping source field.
-   * @param array $source_definition
-   *   The generate definition information.
+   * @param mixed $source_field_config
+   *   The configuration from source field or custom configuration.
    *
-   * @return array
-   *   Returns configuration specific for config type and new field name.
+   * @return \Drupal\testsite_builder\ConfigTemplateMerge
+   *   Returns configuration template merge for config type and new field name.
    */
-  public function getConfigForField(string $entity_type, string $field_name, string $source_field_name, array $source_definition);
+  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config);
 
   /**
    * Generates bundle specific configurations for config type.
    *
    * @param string $bundle
    *   The bundle name.
-   * @param array|string $source_definition
-   *   The generate definition information.
+   * @param mixed $source_config
+   *   The source configuration or single value.
    *
-   * @return array
-   *   Returns configuration specific for config type and new field name.
+   * @return \Drupal\testsite_builder\ConfigTemplateMerge
+   *   Returns configuration template merge for config type and bundle.
    */
-  public function getConfigForBundle(string $bundle, $source_definition);
+  public function getConfigChangesForBundle(string $bundle, $source_config);
 
 }

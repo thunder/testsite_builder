@@ -512,7 +512,7 @@ class ContentCreator {
   }
 
   /**
-   * Get referenced filed definitions.
+   * Get referenced field definitions.
    *
    * @param string $entity_type
    *   The entity type.

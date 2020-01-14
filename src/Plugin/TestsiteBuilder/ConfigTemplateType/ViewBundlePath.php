@@ -2,6 +2,8 @@
 
 namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\ConfigTemplateType;
 
+use Drupal\testsite_builder\ConfigTemplateMerge;
+
 /**
  * View bundle path config template type plugin.
  *
@@ -16,14 +18,14 @@ class ViewBundlePath extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigForBundle(string $bundle, $source_definition) {
-    $path = explode('/', $source_definition);
+  public function getConfigChangesForBundle(string $bundle, $source_config) {
+    $path = explode('/', $source_config);
 
     for ($i = 1; $i < count($path); $i++) {
       $path[$i] .= "_{$bundle}";
     }
 
-    return ['', implode('/', $path)];
+    return new ConfigTemplateMerge(ConfigTemplateMerge::CHANGE_VALUE, implode('/', $path));
   }
 
 }

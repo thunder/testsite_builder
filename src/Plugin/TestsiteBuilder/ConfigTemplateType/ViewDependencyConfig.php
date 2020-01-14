@@ -3,6 +3,7 @@
 namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\ConfigTemplateType;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\testsite_builder\ConfigTemplateMerge;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -42,14 +43,14 @@ class ViewDependencyConfig extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigForField(string $entity_type, string $field_name, string $source_field_name, array $source_definition) {
+  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
     /** @var \Drupal\Core\Entity\Sql\SqlEntityStorageInterface $storage */
     $storage = $this->entityTypeManager->getStorage($entity_type);
-    if (strpos($storage->getTableMapping()->getFieldTableName($field_name), '__')) {
-      return ['', "field.storage.{$entity_type}.{$field_name}"];
+    if (strpos($storage->getTableMapping()->getFieldTableName($field_name), "{$entity_type}__") === 0) {
+      return new ConfigTemplateMerge(ConfigTemplateMerge::ADD_VALUE, "field.storage.{$entity_type}.{$field_name}");
     }
 
-    return parent::getConfigForField($entity_type, $field_name, $source_field_name, $source_definition);
+    return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
   }
 
 }

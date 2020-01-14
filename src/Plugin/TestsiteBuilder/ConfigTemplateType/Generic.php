@@ -4,6 +4,7 @@ namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\ConfigTemplateType;
 
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\PluginBase;
+use Drupal\testsite_builder\ConfigTemplateMerge;
 use Drupal\testsite_builder\ConfigTemplateTypeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -28,15 +29,15 @@ class Generic extends PluginBase implements ConfigTemplateTypeInterface, Contain
   /**
    * {@inheritdoc}
    */
-  public function getConfigForField(string $entity_type, string $field_name, string $source_field_name, array $source_definition) {
-    return ['', ''];
+  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+    return new ConfigTemplateMerge(ConfigTemplateMerge::SKIP);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getConfigForBundle(string $bundle, $source_definition) {
-    return ['', ''];
+  public function getConfigChangesForBundle(string $bundle, $source_config) {
+    return new ConfigTemplateMerge(ConfigTemplateMerge::SKIP);
   }
 
 }
