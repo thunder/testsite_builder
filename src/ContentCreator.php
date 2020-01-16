@@ -90,7 +90,7 @@ class ContentCreator {
   protected $cacheBundleFieldDefinition = [];
 
   /**
-   * Cache of reference field defintions for bundle.
+   * Cache of reference field definitions for bundle.
    *
    * @var array
    */

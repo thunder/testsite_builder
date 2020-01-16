@@ -43,4 +43,4 @@ services:
 
   testsite_builder.config_template_importer:
     class: Drupal\testsite_builder\ConfigTemplateImporter
-    arguments: ['@testsite_builder.config_template_type_manager', '@config.factory', '@entity_type.bundle.info', '@entity_field.manager', '@serialization.yaml', '@config_update.config_update']
+    arguments: ['@testsite_builder.config_template_type_manager', '@config.factory', '@entity_type.bundle.info', '@entity_field.manager']
