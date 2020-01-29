@@ -228,6 +228,9 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
   protected function createSampleDataForField(FieldConfigInterface $field_config) {
+    // Make generated sample data always same.
+    srand(0);
+
     /** @var \Drupal\Core\Field\FieldTypePluginManagerInterface $field_type_plugin */
     $field_type_plugin = \Drupal::service('plugin.manager.field.field_type');
 
