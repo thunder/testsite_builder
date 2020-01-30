@@ -1,6 +1,7 @@
 template:
   entity_type: 'node'
   source: 'views.view.content'
+  fallback: 'testsite_builder.config_template.views_node_content.fallback'
   pre_generate_clone:
     -
       from: 'display.default.display_options.fields.node_bulk_form'
@@ -36,85 +37,27 @@ template:
       type: 'view_bundle_path'
       name: 'display.page_1.display_options.path'
   field_type_mapping:
-    - type: 'entity_reference'
-      match_rules:
-        storage_settings:
-          target_type: 'taxonomy_term'
-      source_field: 'field_channel'
-      custom_generation_types:
-        -
-          type: 'view_filter'
-          source:
-            id: tid_target_id
-            table: node__tid
-            field: tid_target_id
-            relationship: none
-            group_type: group
-            admin_label: ''
-            operator: or
-            value: {  }
-            group: 1
-            exposed: true
-            expose:
-              operator_id: tid_target_id_op
-              label: 'T-ID'
-              description: ''
-              use_operator: false
-              operator: tid_target_id_op
-              operator_limit_selection: false
-              operator_list: {  }
-              identifier: tid_target_id
-              required: false
-              remember: false
-              multiple: false
-              remember_roles:
-                authenticated: authenticated
-                anonymous: '0'
-                restricted_editor: '0'
-                editor: '0'
-                seo: '0'
-                administrator: '0'
-              reduce: false
-            is_grouped: false
-            group_info:
-              label: ''
-              description: ''
-              identifier: ''
-              optional: true
-              widget: select
-              multiple: false
-              remember: false
-              default_group: All
-              default_group_multiple: {  }
-              group_items: {  }
-            reduce_duplicates: false
-            type: textfield
-            limit: true
-            vid: 'tid'
-            hierarchy: false
-            error_message: true
-            plugin_id: taxonomy_index_tid
-    -
-      type: 'entity_reference'
-      source_field: 'type'
-    -
-      type: 'string'
-      source_field: 'title'
-    -
-      type: 'changed'
-      source_field: 'changed'
-    -
-      type: 'created'
-      source_field: 'created'
-    -
-      type: 'boolean'
-      source_field: 'status'
-    -
-      type: 'timestamp'
-      source_field: 'publish_on'
-    -
-      type: 'language'
-      source_field: 'langcode'
+#    - type: 'entity_reference'
+#      match_rules:
+#        storage_settings:
+#          target_type: 'taxonomy_term'
+#      fallback_field: 'field_entity_reference__taxonomy'
+#    -
+#      type: 'entity_reference'
+#      source_field: 'type'
+#      fallback_field: 'field_entity_reference__media'
+#    -
+#      type: 'string'
+#      source_field: 'title'
+#    -
+#      type: 'changed'
+#      source_field: 'changed'
+#    -
+#      type: 'created'
+#      source_field: 'created'
+#    -
+#      type: 'language'
+#      source_field: 'langcode'
     -
       type: '_exclude_template_'
       source_field: 'dummy'

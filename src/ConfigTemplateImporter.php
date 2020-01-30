@@ -190,19 +190,16 @@ class ConfigTemplateImporter {
           continue;
         }
 
-        // Use custom source_field definition.
-        $custom_generation_type_config_template_merge = $this->getCustomTemplateMerge($entity_type, $bundle, $field_name, $dynamic_field_definition['type'], empty($field_map['custom_generation_types']) ? [] : $field_map['custom_generation_types']);
-        if ($custom_generation_type_config_template_merge !== FALSE) {
-          $config = $custom_generation_type_config_template_merge->applyMerge($config, $dynamic_field_definition['path']);
-
-          continue;
-        }
-
-        // Use configuration from source config.
-        $source_field_config = (empty($dynamic_field_definition['resource'][$field_map['source_field']])) ? [] : $dynamic_field_definition['resource'][$field_map['source_field']];
-
         /** @var \Drupal\testsite_builder\ConfigTemplateTypeInterface $config_template_type_plugin */
         $config_template_type_plugin = $this->configTemplateTypeManager->createInstance($dynamic_field_definition['type']);
+
+        // Use configuration from source config or fallback.
+        $source_field_config = $this->templateDefinition->getDynamicSourceDefinitionForField(
+          $dynamic_field_definition['path'],
+          $field_definition->getType(),
+          $field_map['source_field'] ?: '',
+          empty($field_map['fallback_field']) ? $config_template_type_plugin->getPossibleFieldSourceConfigKeys($field_definition) : [$field_map['fallback_field']]
+        );
 
         /** @var \Drupal\testsite_builder\ConfigTemplateMerge $config_template_merge */
         $config_template_merge = $config_template_type_plugin->getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
@@ -230,7 +227,7 @@ class ConfigTemplateImporter {
    */
   private function applyConfigurationForBundle($bundle, array $config, array $dynamic_view_definitions) {
     foreach ($dynamic_view_definitions as $dynamic_view_definition) {
-      $source_view_config = (empty($dynamic_view_definition['resource'])) ? [] : $dynamic_view_definition['resource'];
+      $source_view_config = $this->templateDefinition->getDynamicSourceDefinition($dynamic_view_definition['path']);
 
       /** @var \Drupal\testsite_builder\ConfigTemplateTypeInterface $config_template_type_plugin */
       $config_template_type_plugin = $this->configTemplateTypeManager->createInstance($dynamic_view_definition['type']);

@@ -3,6 +3,7 @@
 namespace Drupal\testsite_builder;
 
 use Drupal\Component\Plugin\PluginInspectionInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
 
 /**
  * Defines an interface for config template type plugin.
@@ -38,5 +39,16 @@ interface ConfigTemplateTypeInterface extends PluginInspectionInterface {
    *   Returns configuration template merge for config type and bundle.
    */
   public function getConfigChangesForBundle(string $bundle, $source_config);
+
+  /**
+   * Get source configuration key for field name.
+   *
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
+   *   The field definition.
+   *
+   * @return array
+   *   Possible source configuration field names.
+   */
+  public function getPossibleFieldSourceConfigKeys(FieldDefinitionInterface $field_definition): array;
 
 }

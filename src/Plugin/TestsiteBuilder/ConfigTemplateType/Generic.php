@@ -2,6 +2,7 @@
 
 namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\ConfigTemplateType;
 
+use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\testsite_builder\ConfigTemplateMerge;
@@ -38,6 +39,27 @@ class Generic extends PluginBase implements ConfigTemplateTypeInterface, Contain
    */
   public function getConfigChangesForBundle(string $bundle, $source_config) {
     return new ConfigTemplateMerge(ConfigTemplateMerge::SKIP);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getPossibleFieldSourceConfigKeys(FieldDefinitionInterface $field_definition): array {
+    $field_storage = $field_definition->getFieldStorageDefinition();
+
+    $result = [];
+    if ($field_storage->isBaseField()) {
+      $result[] = $field_definition->getName();
+    }
+
+    if ($field_storage->getType() === 'entity_reference') {
+      $target_type = $field_storage->getSetting('target_type');
+      $result[] = "field_{$field_definition->getType()}__{$target_type}";
+    }
+
+    $result[] = "field_{$field_definition->getType()}";
+
+    return $result;
   }
 
 }

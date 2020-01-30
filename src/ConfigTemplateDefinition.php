@@ -37,6 +37,13 @@ class ConfigTemplateDefinition {
   protected $sourceConfig;
 
   /**
+   * The template fallback config.
+   *
+   * @var array
+   */
+  protected $fallbackConfig;
+
+  /**
    * The config template definition constructor.
    *
    * @param \Drupal\config_update\ConfigRevertInterface $config_reverter
@@ -67,13 +74,22 @@ class ConfigTemplateDefinition {
    *
    * @return \Drupal\testsite_builder\ConfigTemplateDefinition
    *   Returns instance of config template definition.
+   *
+   * @throws \Exception
    */
   public static function createFromFile($file_name) {
-    $template_definition = \Drupal::service('serialization.yaml')
-      ->decode(file_get_contents($file_name));
+    $yaml_serializer = \Drupal::service('serialization.yaml');
 
     $instance = static::create(\Drupal::getContainer());
+
+    $template_definition = $yaml_serializer->decode(file_get_contents($file_name));
     $instance->definition = $template_definition['template'];
+
+    // Load fallback.
+    if (empty($instance->definition['fallback'])) {
+      throw new \Exception("Configuration template definition requires fallback config.");
+    }
+    $instance->fallbackConfig = $yaml_serializer->decode(file_get_contents(dirname($file_name) . '/fallback/' . $instance->definition['fallback'] . '.yml'));
 
     return $instance;
   }
@@ -140,11 +156,65 @@ class ConfigTemplateDefinition {
       $dynamic_mapping_definitions[] = [
         'path' => $path,
         'type' => $generate_per_field['type'],
-        'resource' => NestedArray::getValue($this->getSourceConfig(), $path),
       ];
     }
 
     return $dynamic_mapping_definitions;
+  }
+
+  /**
+   * Get dynamic config definition for field with fallback.
+   *
+   * @param array $path
+   *   The configuration path.
+   * @param string $field_type
+   *   The field type.
+   * @param string $source_field_name
+   *   The source field name.
+   * @param array $fallback_field_names
+   *   The fallback field name defined in mapping.
+   *
+   * @return array|mixed
+   *   Returns array with configuration for provided path and field.
+   */
+  public function getDynamicSourceDefinitionForField(array $path, $field_type, $source_field_name, array $fallback_field_names = []) {
+    // Use defined mapping to source field.
+    if (!empty($source_field_name)) {
+      $source_field_value = NestedArray::getValue($this->getSourceConfig(), array_merge($path, [$source_field_name]));
+
+      if (!empty($source_field_value)) {
+        return $source_field_value;
+      }
+    }
+
+    // Use fallback field.
+    foreach ($fallback_field_names as $fallback_field_name) {
+      $fallback_config = NestedArray::getValue($this->fallbackConfig, array_merge($path, [$fallback_field_name]));
+      if (!empty($fallback_config)) {
+        return $fallback_config;
+      }
+    }
+
+    return [];
+  }
+
+  /**
+   * Get dynamic config definition for field with fallback.
+   *
+   * @param array $path
+   *   The configuration path.
+   *
+   * @return array|mixed
+   *   Returns array with configuration for provided path and field.
+   */
+  public function getDynamicSourceDefinition(array $path) {
+    $source_definition = NestedArray::getValue($this->getSourceConfig(), $path);
+
+    if (!empty($source_definition)) {
+      return $source_definition;
+    }
+
+    return [];
   }
 
   /**
@@ -183,7 +253,10 @@ class ConfigTemplateDefinition {
       }
     }
 
-    return FALSE;
+    // Use fallback match.
+    return [
+      'type' => $field_definition->getType(),
+    ];
   }
 
   /**

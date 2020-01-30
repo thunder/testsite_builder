@@ -4,6 +4,7 @@ namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\ConfigTemplateType;
 
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\testsite_builder\ConfigTemplateMerge;
 use Drupal\views\ViewsData;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -115,6 +116,7 @@ class ViewFilter extends Generic {
     $source_field_config['table'] = $storage->getTableMapping()
       ->getFieldTableName($field_name);
     $source_field_config['field'] = $field_name;
+    $source_field_config['entity_type'] = $entity_type;
     $source_field_config['entity_field'] = $field_name;
 
     $source_field_config['expose']['label'] = "Filter: {$field_name}";
@@ -135,6 +137,26 @@ class ViewFilter extends Generic {
     }
 
     return new ConfigTemplateMerge(ConfigTemplateMerge::ADD_KEY, $source_field_config, $field_name);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getPossibleFieldSourceConfigKeys(FieldDefinitionInterface $field_definition): array {
+    $field_storage = $field_definition->getFieldStorageDefinition();
+    $field_type_columns = array_keys($field_storage->getColumns());
+
+    $result = parent::getPossibleFieldSourceConfigKeys($field_definition);
+    foreach ($field_type_columns as $field_type_column) {
+      if ($field_storage->getType() === 'entity_reference') {
+        $target_type = $field_storage->getSetting('target_type');
+        $result[] = "field_{$field_storage->getType()}__{$target_type}_{$field_type_column}";
+      }
+
+      $result[] = "field_{$field_storage->getType()}_{$field_type_column}";
+    }
+
+    return $result;
   }
 
 }
