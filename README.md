@@ -29,6 +29,7 @@ To use the content-create functionality of the testsite_builder, adjust the MySQ
 Login as root and execute
 
     GRANT FILE on *.* to 'drupaluser'@'localhost'
+    GRANT SUPER on *.* to 'drupaluser'@'localhost'
 
 #### Adjust config
 Open your my.cnf and add

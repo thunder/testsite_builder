@@ -20,8 +20,9 @@ class ViewBundlePath extends Generic {
    */
   public function getConfigChangesForBundle(string $bundle, $source_config) {
     $path = explode('/', $source_config);
+    $path_size = count($path);
 
-    for ($i = 1; $i < count($path); $i++) {
+    for ($i = 1; $i < $path_size; $i++) {
       $path[$i] .= "_{$bundle}";
     }
 

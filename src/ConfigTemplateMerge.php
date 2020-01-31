@@ -70,11 +70,11 @@ class ConfigTemplateMerge {
    *   Returns configuration with applied merge changes.
    */
   public function applyMerge(array $config, array $path) {
-    if ($this->tactic == static::SKIP) {
+    if ($this->tactic === static::SKIP) {
       return $config;
     }
 
-    if ($this->tactic == static::ADD_VALUE) {
+    if ($this->tactic === static::ADD_VALUE) {
       $array_value = NestedArray::getValue($config, $path);
       $array_value[] = $this->data;
       NestedArray::setValue($config, $path, $array_value);
@@ -82,12 +82,12 @@ class ConfigTemplateMerge {
       return $config;
     }
 
-    if ($this->tactic == static::ADD_KEY) {
+    if ($this->tactic === static::ADD_KEY) {
       $path[] = $this->key;
       NestedArray::setValue($config, $path, $this->data);
     }
 
-    if ($this->tactic == static::CHANGE_VALUE) {
+    if ($this->tactic === static::CHANGE_VALUE) {
       NestedArray::setValue($config, $path, $this->data);
     }
 

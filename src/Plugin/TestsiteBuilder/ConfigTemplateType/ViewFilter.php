@@ -2,11 +2,8 @@
 
 namespace Drupal\testsite_builder\Plugin\TestsiteBuilder\ConfigTemplateType;
 
-use Drupal\Core\Entity\EntityFieldManagerInterface;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\testsite_builder\ConfigTemplateMerge;
-use Drupal\views\ViewsData;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -44,19 +41,13 @@ class ViewFilter extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, ViewsData $views_data, EntityFieldManagerInterface $entity_field_manager) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition);
-
-    $this->entityTypeManager = $entity_type_manager;
-    $this->viewsData = $views_data;
-    $this->entityFieldManager = $entity_field_manager;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static($configuration, $plugin_id, $plugin_definition, $container->get('entity_type.manager'), $container->get('views.views_data'), $container->get('entity_field.manager'));
+    $plugin = parent::create($container, $configuration, $plugin_id, $plugin_definition);
+    $plugin->entityTypeManager = $container->get('entity_type.manager');
+    $plugin->viewsData = $container->get('views.views_data');
+    $plugin->entityFieldManager = $container->get('entity_field.manager');
+
+    return $plugin;
   }
 
   /**

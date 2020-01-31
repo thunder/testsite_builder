@@ -167,8 +167,6 @@ class ConfigTemplateDefinition {
    *
    * @param array $path
    *   The configuration path.
-   * @param string $field_type
-   *   The field type.
    * @param string $source_field_name
    *   The source field name.
    * @param array $fallback_field_names
@@ -177,10 +175,11 @@ class ConfigTemplateDefinition {
    * @return array|mixed
    *   Returns array with configuration for provided path and field.
    */
-  public function getDynamicSourceDefinitionForField(array $path, $field_type, $source_field_name, array $fallback_field_names = []) {
+  public function getDynamicSourceDefinitionForField(array $path, $source_field_name, array $fallback_field_names = []) {
     // Use defined mapping to source field.
     if (!empty($source_field_name)) {
-      $source_field_value = NestedArray::getValue($this->getSourceConfig(), array_merge($path, [$source_field_name]));
+      $source_config = $this->getSourceConfig();
+      $source_field_value = NestedArray::getValue($source_config, array_merge($path, [$source_field_name]));
 
       if (!empty($source_field_value)) {
         return $source_field_value;
@@ -208,7 +207,8 @@ class ConfigTemplateDefinition {
    *   Returns array with configuration for provided path and field.
    */
   public function getDynamicSourceDefinition(array $path) {
-    $source_definition = NestedArray::getValue($this->getSourceConfig(), $path);
+    $source_config = $this->getSourceConfig();
+    $source_definition = NestedArray::getValue($source_config, $path);
 
     if (!empty($source_definition)) {
       return $source_definition;

@@ -196,8 +196,7 @@ class ConfigTemplateImporter {
         // Use configuration from source config or fallback.
         $source_field_config = $this->templateDefinition->getDynamicSourceDefinitionForField(
           $dynamic_field_definition['path'],
-          $field_definition->getType(),
-          $field_map['source_field'] ?: '',
+          empty($field_map['source_field']) ? '' : $field_map['source_field'],
           empty($field_map['fallback_field']) ? $config_template_type_plugin->getPossibleFieldSourceConfigKeys($field_definition) : [$field_map['fallback_field']]
         );
 
