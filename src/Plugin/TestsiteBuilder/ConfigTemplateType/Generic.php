@@ -44,20 +44,26 @@ class Generic extends PluginBase implements ConfigTemplateTypeInterface, Contain
   /**
    * {@inheritdoc}
    */
-  public function getPossibleFieldSourceConfigKeys(FieldDefinitionInterface $field_definition): array {
+  public function getPossibleFieldSourceConfigKeys(FieldDefinitionInterface $field_definition, string $field_name = ''): array {
     $field_storage = $field_definition->getFieldStorageDefinition();
 
     $result = [];
-    if ($field_storage->isBaseField()) {
-      $result[] = $field_definition->getName();
-    }
+    // Create fallback field names.
+    if (empty($field_name)) {
+      if ($field_storage->isBaseField()) {
+        $result[] = $field_definition->getName();
+      }
 
-    if ($field_storage->getType() === 'entity_reference') {
-      $target_type = $field_storage->getSetting('target_type');
-      $result[] = "field_{$field_definition->getType()}__{$target_type}";
-    }
+      if ($field_storage->getType() === 'entity_reference') {
+        $target_type = $field_storage->getSetting('target_type');
+        $result[] = "field_{$field_definition->getType()}__{$target_type}";
+      }
 
-    $result[] = "field_{$field_definition->getType()}";
+      $result[] = "field_{$field_definition->getType()}";
+    }
+    else {
+      $result[] = $field_name;
+    }
 
     return $result;
   }

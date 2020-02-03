@@ -106,21 +106,22 @@ class ViewFilter extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getPossibleFieldSourceConfigKeys(FieldDefinitionInterface $field_definition): array {
+  public function getPossibleFieldSourceConfigKeys(FieldDefinitionInterface $field_definition, string $field_name = ''): array {
     $field_storage = $field_definition->getFieldStorageDefinition();
     $field_type_columns = array_keys($field_storage->getColumns());
+    $config_keys_for_field = parent::getPossibleFieldSourceConfigKeys($field_definition);
 
-    $result = parent::getPossibleFieldSourceConfigKeys($field_definition);
-    foreach ($field_type_columns as $field_type_column) {
-      if ($field_storage->getType() === 'entity_reference') {
-        $target_type = $field_storage->getSetting('target_type');
-        $result[] = "field_{$field_storage->getType()}__{$target_type}_{$field_type_column}";
+    $view_filter_keys_for_field = [];
+    // Append possible columns for all field names.
+    foreach ($config_keys_for_field as $config_key_for_field) {
+      foreach ($field_type_columns as $field_type_column) {
+        $view_filter_keys_for_field[] = "{$config_key_for_field}_{$field_type_column}";
       }
 
-      $result[] = "field_{$field_storage->getType()}_{$field_type_column}";
+      $view_filter_keys_for_field[] = $config_key_for_field;
     }
 
-    return $result;
+    return $view_filter_keys_for_field;
   }
 
 }

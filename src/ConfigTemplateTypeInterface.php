@@ -45,10 +45,12 @@ interface ConfigTemplateTypeInterface extends PluginInspectionInterface {
    *
    * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
    *   The field definition.
+   * @param string $field_name
+   *   The source field name.
    *
    * @return array
    *   Possible source configuration field names.
    */
-  public function getPossibleFieldSourceConfigKeys(FieldDefinitionInterface $field_definition): array;
+  public function getPossibleFieldSourceConfigKeys(FieldDefinitionInterface $field_definition, string $field_name = ''): array;
 
 }

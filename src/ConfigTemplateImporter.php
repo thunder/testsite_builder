@@ -196,8 +196,8 @@ class ConfigTemplateImporter {
         // Use configuration from source config or fallback.
         $source_field_config = $this->templateDefinition->getDynamicSourceDefinitionForField(
           $dynamic_field_definition['path'],
-          empty($field_map['source_field']) ? '' : $field_map['source_field'],
-          empty($field_map['fallback_field']) ? $config_template_type_plugin->getPossibleFieldSourceConfigKeys($field_definition) : [$field_map['fallback_field']]
+          empty($field_map['source_field']) ? [] : $config_template_type_plugin->getPossibleFieldSourceConfigKeys($field_definition, $field_map['source_field']),
+          $config_template_type_plugin->getPossibleFieldSourceConfigKeys($field_definition, empty($field_map['fallback_field']) ? '' : $field_map['fallback_field'])
         );
 
         /** @var \Drupal\testsite_builder\ConfigTemplateMerge $config_template_merge */
