@@ -240,41 +240,6 @@ class ConfigTemplateImporter {
   }
 
   /**
-   * Get template merge for custom config generation type.
-   *
-   * @param string $entity_type
-   *   The entity type.
-   * @param string $bundle
-   *   The bundle.
-   * @param string $field_name
-   *   The field name.
-   * @param string $generation_type
-   *   The field generation type.
-   * @param array $custom_generation_types
-   *   Custom configuration for generation type.
-   *
-   * @return \Drupal\testsite_builder\ConfigTemplateMerge|bool
-   *   Returns config template merge if custom config is found or false.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\PluginException
-   */
-  protected function getCustomTemplateMerge($entity_type, $bundle, $field_name, $generation_type, array $custom_generation_types) {
-    foreach ($custom_generation_types as $custom_generation_type_definition) {
-      if ($custom_generation_type_definition['type'] === $generation_type) {
-        $source_field_config = $custom_generation_type_definition['source'];
-
-        /** @var \Drupal\testsite_builder\ConfigTemplateTypeInterface $config_template_type_plugin */
-        $config_template_type_plugin = $this->configTemplateTypeManager->createInstance($generation_type);
-
-        /** @var \Drupal\testsite_builder\ConfigTemplateMerge $config_template_merge */
-        return $config_template_type_plugin->getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
-      }
-    }
-
-    return FALSE;
-  }
-
-  /**
    * Load template configuration from yaml file.
    *
    * @param string $file_name

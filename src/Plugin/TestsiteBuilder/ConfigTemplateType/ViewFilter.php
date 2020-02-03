@@ -39,6 +39,13 @@ class ViewFilter extends Generic {
   protected $entityFieldManager;
 
   /**
+   * The config template type manager service.
+   *
+   * @var \Drupal\testsite_builder\ConfigTemplateTypePluginManager
+   */
+  protected $configTemplateTypeManager;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
@@ -46,44 +53,9 @@ class ViewFilter extends Generic {
     $plugin->entityTypeManager = $container->get('entity_type.manager');
     $plugin->viewsData = $container->get('views.views_data');
     $plugin->entityFieldManager = $container->get('entity_field.manager');
+    $plugin->configTemplateTypeManager = $container->get('testsite_builder.config_template_type_manager');
 
     return $plugin;
-  }
-
-  /**
-   * Applies plugin specific configuration.
-   *
-   * @param string $entity_type
-   *   The entity type.
-   * @param string $bundle
-   *   The bundle.
-   * @param string $field_name
-   *   The field name.
-   * @param mixed $config
-   *   The plugin configuration.
-   *
-   * @return mixed
-   *   Returns plugin configuration or FALSE.
-   */
-  protected function applyPlugConfiguration(string $entity_type, string $bundle, string $field_name, $config) {
-    // Handles: "taxonomy_index_tid" - plugin.
-    if ($config['plugin_id'] === 'taxonomy_index_tid') {
-      $field_definitions = $this->entityFieldManager->getFieldDefinitions($entity_type, $bundle);
-
-      if (empty($field_definitions[$field_name])) {
-        return FALSE;
-      }
-
-      $field_settings = $field_definitions[$field_name]->getSettings();
-      if (empty($field_settings['handler_settings']['target_bundles'])) {
-        return FALSE;
-      }
-
-      reset($field_settings['handler_settings']['target_bundles']);
-      $config['vid'] = key($field_settings['handler_settings']['target_bundles']);
-    }
-
-    return $config;
   }
 
   /**
@@ -94,11 +66,12 @@ class ViewFilter extends Generic {
       return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
     }
 
-    // Skip configuration if plugin configuration is not changed accordingly.
-    $source_field_config = $this->applyPlugConfiguration($entity_type, $bundle, $field_name, $source_field_config);
-    if ($source_field_config === FALSE) {
-      return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
-    }
+    /** @var \Drupal\testsite_builder\ConfigTemplateTypeInterface $view_filter_plugin_config_template_type */
+    $view_filter_plugin_config_template_type = $this->configTemplateTypeManager->createInstance('view_filter_plugin_' . $source_field_config['plugin_id']);
+    $config_template_merge = $view_filter_plugin_config_template_type->getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+
+    // Apply custom change related to view filter plugin.
+    $source_field_config = $config_template_merge->applyMerge($source_field_config, []);
 
     /** @var \Drupal\Core\Entity\Sql\SqlEntityStorageInterface $storage */
     $storage = $this->entityTypeManager->getStorage($entity_type);
