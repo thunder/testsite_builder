@@ -244,13 +244,20 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
     $samples = [];
     for ($i = 0; $i < 5; $i++) {
       $sample = $field_item->generateSampleValue($field_config);
+
       // Image files are created temporally. We need them permanent.
-      if ($field_config->getType() == 'image') {
+      if ($field_config->getType() === 'image') {
         /** @var \Drupal\file\FileInterface $file */
         $file = $this->entityTypeManager->getStorage('file')->load($sample['target_id']);
         $file->setPermanent();
         $file->save();
       }
+
+      // Link generated data is incomplete.
+      if ($field_config->getType() === 'link') {
+        $sample['options'] = serialize([]);
+      }
+
       $samples[] = $sample;
     }
 

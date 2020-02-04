@@ -1,7 +1,7 @@
 services:
   testsite_builder.config_creator:
     class: Drupal\testsite_builder\ConfigCreator
-    arguments: ['@entity_type.manager', '@entity_field.manager', '@plugin.manager.field_type_manager', '@plugin.manager.entity_type_manager', '@testsite_builder.config_importer_manager', '@config.factory', '@event_dispatcher', '@testsite_builder.content_creator_storage', '@database']
+    arguments: ['@entity_type.manager', '@entity_field.manager', '@plugin.manager.field_type_manager', '@plugin.manager.entity_type_manager', '@testsite_builder.config_importer_manager', '@testsite_builder.config_template_importer', '@config.factory', '@event_dispatcher', '@testsite_builder.content_creator_storage', '@database']
 
   testsite_builder.created_field_manager:
     class: Drupal\testsite_builder\CreatedFieldManager
@@ -36,3 +36,11 @@ services:
   testsite_builder.config_importer_manager:
     class: Drupal\testsite_builder\ConfigImporterPluginManager
     parent: default_plugin_manager
+
+  testsite_builder.config_template_type_manager:
+    class: Drupal\testsite_builder\ConfigTemplateTypePluginManager
+    parent: default_plugin_manager
+
+  testsite_builder.config_template_importer:
+    class: Drupal\testsite_builder\ConfigTemplateImporter
+    arguments: ['@testsite_builder.config_template_type_manager', '@config.factory', '@entity_type.bundle.info', '@entity_field.manager']

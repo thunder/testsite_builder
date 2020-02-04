@@ -85,6 +85,13 @@ class ConfigCreator {
   protected $configImporterPluginManager;
 
   /**
+   * The config template importer service.
+   *
+   * @var \Drupal\testsite_builder\ConfigTemplateImporter
+   */
+  protected $configTemplateImporter;
+
+  /**
    * The database connection.
    *
    * @var \Drupal\Core\Database\Connection
@@ -104,6 +111,8 @@ class ConfigCreator {
    *   The entity type manager service.
    * @param \Drupal\testsite_builder\ConfigImporterPluginManager $configImporterPluginManager
    *   The config importer plugin manager.
+   * @param \Drupal\testsite_builder\ConfigTemplateImporter $configTemplateImporter
+   *   The config template importer service.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
    *   The config factory service.
    * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
@@ -113,12 +122,13 @@ class ConfigCreator {
    * @param \Drupal\Core\Database\Connection $connection
    *   The database connection.
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager, ConfigImporterPluginManager $configImporterPluginManager, ConfigFactoryInterface $configFactory, EventDispatcherInterface $event_dispatcher, ContentCreatorStorage $content_creator_storage, Connection $connection) {
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, EntityFieldManagerInterface $entityFieldManager, FieldTypePluginManager $fieldTypePluginManager, EntityTypePluginManager $entityTypePluginManager, ConfigImporterPluginManager $configImporterPluginManager, ConfigTemplateImporter $configTemplateImporter, ConfigFactoryInterface $configFactory, EventDispatcherInterface $event_dispatcher, ContentCreatorStorage $content_creator_storage, Connection $connection) {
     $this->entityTypeManager = $entityTypeManager;
     $this->entityFieldManager = $entityFieldManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
     $this->entityTypePluginManager = $entityTypePluginManager;
     $this->configImporterPluginManager = $configImporterPluginManager;
+    $this->configTemplateImporter = $configTemplateImporter;
     $this->configFactory = $configFactory;
     $this->eventDispatcher = $event_dispatcher;
     $this->contentCreatorStorage = $content_creator_storage;
@@ -264,6 +274,22 @@ class ConfigCreator {
     }
 
     return $missing_configurations;
+  }
+
+  /**
+   * Import template configurations.
+   */
+  public function importTemplateConfigurations() {
+    $template_path = realpath(drupal_get_path('module', 'testsite_builder') . '/template');
+
+    $loadedTemplates = [];
+    foreach (glob("{$template_path}/*.yml") as $template_file) {
+      $this->configTemplateImporter->loadTemplate($template_file);
+
+      $loadedTemplates[] = basename($template_file);
+    }
+
+    return $loadedTemplates;
   }
 
   /**

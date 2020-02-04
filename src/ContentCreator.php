@@ -90,7 +90,7 @@ class ContentCreator {
   protected $cacheBundleFieldDefinition = [];
 
   /**
-   * Cache of reference field defintions for bundle.
+   * Cache of reference field definitions for bundle.
    *
    * @var array
    */
@@ -512,7 +512,7 @@ class ContentCreator {
   }
 
   /**
-   * Get referenced filed definitions.
+   * Get referenced field definitions.
    *
    * @param string $entity_type
    *   The entity type.

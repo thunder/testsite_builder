@@ -20,7 +20,7 @@ class ConfigCreatorFieldCreateEvent extends GenericEvent {
   protected $fieldConfig;
 
   /**
-   * The filed configuration provided by Sampler module.
+   * The field configuration provided by Sampler module.
    *
    * @var array
    */
@@ -32,7 +32,7 @@ class ConfigCreatorFieldCreateEvent extends GenericEvent {
    * @param \Drupal\field\FieldConfigInterface $field_config
    *   The field configuration.
    * @param array $sampler_field_config
-   *   The filed configuration provided by Sampler module.
+   *   The field configuration provided by Sampler module.
    */
   public function __construct(FieldConfigInterface $field_config, array $sampler_field_config) {
     $this->fieldConfig = $field_config;
