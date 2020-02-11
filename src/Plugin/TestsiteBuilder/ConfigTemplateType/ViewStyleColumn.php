@@ -8,7 +8,7 @@ use Drupal\testsite_builder\ConfigTemplateMerge;
  * View style column config template type plugin.
  *
  * @TestsiteBuilderConfigTemplateType(
- *   id = "view_style_columns",
+ *   id = "view_style_column",
  *   label = @Translation("View style column"),
  *   description = @Translation("View style column config template type plugin.")
  * )

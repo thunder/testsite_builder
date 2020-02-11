@@ -1,0 +1,57 @@
+template:
+  entity_type: 'node'
+  source: 'search_api.index.content'
+  fallback: 'testsite_builder.config_template.search_api_index.fallback'
+  pre_generate_clone: []
+  post_generate_clone: []
+  generate_per_field:
+    -
+      type: 'view_dependency_config'
+      name: 'dependencies.config'
+    -
+      type: 'search_api_field_settings'
+      name: 'field_settings'
+#    -
+#      type: 'view_style_info'
+#      name: 'display.default.display_options.style.options.info'
+#    -
+#      type: 'view_field'
+#      name: 'display.default.display_options.fields'
+#    -
+#      type: 'view_filter'
+#      name: 'display.default.display_options.filters'
+#    -
+#      type: 'view_config_cache_tag'
+#      name: 'display.default.cache_metadata.tags'
+#    -
+#      type: 'view_config_cache_tag'
+#      name: 'display.page_1.cache_metadata.tags'
+  generate_per_bundle: []
+  field_type_mapping:
+    -
+      type: 'string'
+      source_field: 'title'
+    -
+      type: 'boolean'
+      source_field: 'promote'
+    -
+      type: 'entity_reference'
+      exclude_generation_type:
+        - 'view_dependency_config'
+        - 'search_api_field_settings'
+#      source_field: 'field_channel'
+    -
+      type: 'date'
+      exclude_generation_type:
+        - 'view_dependency_config'
+        - 'search_api_field_settings'
+    -
+      type: 'integer'
+      exclude_generation_type:
+        - 'view_dependency_config'
+        - 'search_api_field_settings'
+#    -
+#      type: '_exclude_template_'
+#      source_field: 'dummy'
+#      match_rules:
+#        cardinality: 1

@@ -32,11 +32,16 @@ template:
     -
       type: 'view_config_cache_tag'
       name: 'display.page_1.cache_metadata.tags'
-  generate_per_view:
+  generate_per_bundle:
     -
       type: 'view_bundle_path'
       name: 'display.page_1.display_options.path'
   field_type_mapping:
+    -
+      type: 'entity_reference'
+      source_field: 'type'
+      match_rules:
+        target_type: node_type
     -
       type: 'string'
       source_field: 'title'
@@ -51,6 +56,15 @@ template:
       source_field: 'langcode'
     -
       type: 'string_long'
+      exclude_generation_type:
+        - 'view_dependency_config'
+        - 'view_style_column'
+        - 'view_style_info'
+        - 'view_field'
+        - 'view_filter'
+        - 'view_config_cache_tag'
+    -
+      type: 'metatag'
       exclude_generation_type:
         - 'view_dependency_config'
         - 'view_style_column'

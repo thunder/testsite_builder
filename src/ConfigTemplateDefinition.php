@@ -2,6 +2,7 @@
 
 namespace Drupal\testsite_builder;
 
+use Drupal\Component\Serialization\SerializationInterface;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\config_update\ConfigRevertInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -16,11 +17,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class ConfigTemplateDefinition {
 
   /**
-   * The template configuration.
+   * The Yaml serializer.
    *
-   * @var array
+   * @var \Drupal\Component\Serialization\SerializationInterface
    */
-  protected $definition;
+  protected $yamlSerializer;
 
   /**
    * The config reverter service from config update.
@@ -28,6 +29,20 @@ class ConfigTemplateDefinition {
    * @var \Drupal\config_update\ConfigRevertInterface
    */
   protected $configReverter;
+
+  /**
+   * The template configuration.
+   *
+   * @var array
+   */
+  protected $definition;
+
+  /**
+   * The directory where template is located.
+   *
+   * @var string
+   */
+  protected $templateDirectory;
 
   /**
    * The template source config.
@@ -46,10 +61,13 @@ class ConfigTemplateDefinition {
   /**
    * The config template definition constructor.
    *
+   * @param \Drupal\Component\Serialization\SerializationInterface $yaml_serializer
+   *   The Yaml serializer.
    * @param \Drupal\config_update\ConfigRevertInterface $config_reverter
    *   The config reverter service.
    */
-  public function __construct(ConfigRevertInterface $config_reverter) {
+  public function __construct(SerializationInterface $yaml_serializer, ConfigRevertInterface $config_reverter) {
+    $this->yamlSerializer = $yaml_serializer;
     $this->configReverter = $config_reverter;
   }
 
@@ -63,7 +81,10 @@ class ConfigTemplateDefinition {
    *   The instance of config template definition.
    */
   protected static function create(ContainerInterface $container): ConfigTemplateDefinition {
-    return new static($container->get('config_update.config_update'));
+    return new static(
+      $container->get('serialization.yaml'),
+      $container->get('config_update.config_update')
+    );
   }
 
   /**
@@ -78,18 +99,45 @@ class ConfigTemplateDefinition {
    * @throws \Exception
    */
   public static function createFromFile($file_name) {
-    $yaml_serializer = \Drupal::service('serialization.yaml');
-
     $instance = static::create(\Drupal::getContainer());
+    $template_definition = $instance->yamlSerializer->decode(file_get_contents($file_name));
 
-    $template_definition = $yaml_serializer->decode(file_get_contents($file_name));
-    $instance->definition = $template_definition['template'];
+    return static::createFromDefinition(dirname($file_name), $template_definition['template']);
+  }
+
+  /**
+   * Get directory where template is located.
+   *
+   * @return string
+   *   Returns directory where template is located.
+   */
+  public function getTemplateDirectory() {
+    return $this->templateDirectory;
+  }
+
+  /**
+   * Create new config template definition from defintion array.
+   *
+   * @param string $template_directory
+   *   The directory where template is located.
+   * @param array $definition
+   *   The config template defintion.
+   *
+   * @return \Drupal\testsite_builder\ConfigTemplateDefinition
+   *   Returns instance of config template definition.
+   *
+   * @throws \Exception
+   */
+  public static function createFromDefinition($template_directory, array $definition) {
+    $instance = static::create(\Drupal::getContainer());
+    $instance->definition = $definition;
+    $instance->templateDirectory = $template_directory;
 
     // Load fallback.
     if (empty($instance->definition['fallback'])) {
       throw new \Exception("Configuration template definition requires fallback config.");
     }
-    $instance->fallbackConfig = $yaml_serializer->decode(file_get_contents(dirname($file_name) . '/fallback/' . $instance->definition['fallback'] . '.yml'));
+    $instance->fallbackConfig = $instance->yamlSerializer->decode(file_get_contents($instance->templateDirectory . '/fallback/' . $instance->definition['fallback'] . '.yml'));
 
     return $instance;
   }
@@ -100,10 +148,14 @@ class ConfigTemplateDefinition {
    * @param string $key
    *   The key for template.
    *
-   * @return array|string
+   * @return mixed
    *   Returns value of base template definition property.
    */
   public function getKey($key) {
+    if (!isset($this->definition[$key])) {
+      return NULL;
+    }
+
     return $this->definition[$key];
   }
 
@@ -151,7 +203,7 @@ class ConfigTemplateDefinition {
   protected function getDynamicDefinitions($key) {
     $dynamic_mapping_definitions = [];
     foreach ($this->definition[$key] as $generate_per_field) {
-      $path = explode('.', $generate_per_field['name']);
+      $path = array_filter(explode('.', $generate_per_field['name']));
 
       $dynamic_mapping_definitions[] = [
         'path' => $path,
@@ -229,13 +281,13 @@ class ConfigTemplateDefinition {
   }
 
   /**
-   * Get dynamic mapping information for fields.
+   * Get dynamic mapping information for bundles.
    *
    * @return array
    *   Returns field definitions for dynamic part of source configuration.
    */
-  public function getDynamicViewDefinitions() {
-    return $this->getDynamicDefinitions('generate_per_view');
+  public function getDynamicBundleDefinitions() {
+    return $this->getDynamicDefinitions('generate_per_bundle');
   }
 
   /**
@@ -248,6 +300,10 @@ class ConfigTemplateDefinition {
    *   Returns field mapping or false if not found.
    */
   public function findFieldMapping(FieldDefinitionInterface $field_definition) {
+    if (empty($this->definition['field_type_mapping'])) {
+      return FALSE;
+    }
+
     foreach ($this->definition['field_type_mapping'] as $field_map) {
       if ($this->matchesFieldTypeMapping($field_definition, $field_map)) {
         return $field_map;

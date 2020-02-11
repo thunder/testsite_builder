@@ -1,0 +1,17 @@
+template:
+  entity_type: 'node'
+  source: 'block.block.thunder_admin_exposedformcontent_search_apipage_1'
+  fallback: 'testsite_builder.config_template.block_view_search_api_exposed_form.fallback'
+  pre_generate_clone: []
+  post_generate_clone: []
+  generate_per_field: []
+  generate_per_bundle:
+    -
+      type: 'view_search_api_block_plugin'
+      name: 'plugin'
+    -
+      type: 'view_search_api_block_plugin'
+      name: 'settings.id'
+    -
+      type: 'view_search_api_bundle_path'
+      name: 'visibility.request_path.pages'
