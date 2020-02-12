@@ -54,7 +54,7 @@ template:
       templates:
         -
           source: 'facets.facet.status'
-          fallback: 'testsite_builder.config_template.views_node_content_search_api_status_facet.fallback'
+          fallback: 'testsite_builder.config_template.views_node_content_search_api_facet.fallback'
           full_template_plugin: 'view_search_api_facet'
           pre_generate_clone: []
           post_generate_clone: []
@@ -62,7 +62,7 @@ template:
           generate_per_bundle: []
         -
           source: 'block.block.thunder_admin_facet_status'
-          fallback: 'testsite_builder.config_template.views_node_content_search_api_status_facet_block.fallback'
+          fallback: 'testsite_builder.config_template.views_node_content_search_api_facet_block.fallback'
           full_template_plugin: 'view_search_api_facet_block'
           pre_generate_clone: []
           post_generate_clone: []

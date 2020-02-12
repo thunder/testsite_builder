@@ -1,54 +1,205 @@
 langcode: en
 status: true
 dependencies:
-  config:
-    - field.storage.node.field_channel
-    - field.storage.node.field_tags
-    - search_api.server.database
-    - core.entity_view_mode.node.search_index
   module:
     - node
-    - user
     - search_api
-id: content
-name: Content
+  config:
+    - field.storage.node.field_boolean
+    - field.storage.node.field_datetime
+    - field.storage.node.field_decimal
+    - field.storage.node.field_email
+    - field.storage.node.field_entity_reference__media
+    - field.storage.node.field_entity_reference__taxonomy
+    - field.storage.node.field_entity_reference__user
+    - field.storage.node.field_file
+    - field.storage.node.field_float
+    - field.storage.node.field_image
+    - field.storage.node.field_integer
+    - field.storage.node.field_link
+    - field.storage.node.field_list_float
+    - field.storage.node.field_list_integer
+    - field.storage.node.field_list_string
+    - field.storage.node.field_string
+    - field.storage.node.field_string_long
+    - field.storage.node.field_text
+    - field.storage.node.field_text_long
+    - field.storage.node.field_text_with_summary
+    - field.storage.node.field_timestamp
+    - search_api.server.database
+id: index_all_fields
+name: 'Index All Fields'
 description: ''
 read_only: false
 field_settings:
-  field_channel:
-    label: Channel
+  field_boolean:
+    label: field_boolean
     datasource_id: 'entity:node'
-    property_path: field_channel
-    type: integer
+    property_path: field_boolean
+    type: boolean
     dependencies:
       config:
-        - field.storage.node.field_channel
-  field_tags:
-    label: Tags
+        - field.storage.node.field_boolean
+  field_datetime:
+    label: field_datetime
     datasource_id: 'entity:node'
-    property_path: field_tags
-    type: integer
-    dependencies:
-      config:
-        - field.storage.node.field_tags
-  name:
-    label: 'Authored by » User » Name'
-    datasource_id: 'entity:node'
-    property_path: 'uid:entity:name'
-    type: string
-    dependencies:
-      module:
-        - node
-        - user
-        - user
-  node_changed:
-    label: Changed
-    datasource_id: 'entity:node'
-    property_path: changed
+    property_path: field_datetime
     type: date
     dependencies:
-      module:
-        - node
+      config:
+        - field.storage.node.field_datetime
+  field_decimal:
+    label: field_decimal
+    datasource_id: 'entity:node'
+    property_path: field_decimal
+    type: string
+    dependencies:
+      config:
+        - field.storage.node.field_decimal
+  field_email:
+    label: field_email
+    datasource_id: 'entity:node'
+    property_path: field_email
+    type: string
+    dependencies:
+      config:
+        - field.storage.node.field_email
+  field_entity_reference__media:
+    label: field_entity_reference__media
+    datasource_id: 'entity:node'
+    property_path: field_entity_reference__media
+    type: integer
+    dependencies:
+      config:
+        - field.storage.node.field_entity_reference__media
+  field_entity_reference__taxonomy:
+    label: field_entity_reference__taxonomy
+    datasource_id: 'entity:node'
+    property_path: field_entity_reference__taxonomy
+    type: integer
+    dependencies:
+      config:
+        - field.storage.node.field_entity_reference__taxonomy
+  field_entity_reference__user:
+    label: field_entity_reference__user
+    datasource_id: 'entity:node'
+    property_path: field_entity_reference__user
+    type: integer
+    dependencies:
+      config:
+        - field.storage.node.field_entity_reference__user
+  field_file:
+    label: field_file
+    datasource_id: 'entity:node'
+    property_path: field_file
+    type: integer
+    dependencies:
+      config:
+        - field.storage.node.field_file
+  field_float:
+    label: field_float
+    datasource_id: 'entity:node'
+    property_path: field_float
+    type: decimal
+    dependencies:
+      config:
+        - field.storage.node.field_float
+  field_image:
+    label: field_image
+    datasource_id: 'entity:node'
+    property_path: field_image
+    type: integer
+    dependencies:
+      config:
+        - field.storage.node.field_image
+  field_integer:
+    label: field_integer
+    datasource_id: 'entity:node'
+    property_path: field_integer
+    type: integer
+    dependencies:
+      config:
+        - field.storage.node.field_integer
+  field_link:
+    label: field_link
+    datasource_id: 'entity:node'
+    property_path: field_link
+    type: string
+    dependencies:
+      config:
+        - field.storage.node.field_link
+  field_list_float:
+    label: field_list_float
+    datasource_id: 'entity:node'
+    property_path: field_list_float
+    type: decimal
+    dependencies:
+      config:
+        - field.storage.node.field_list_float
+  field_list_integer:
+    label: field_list_integer
+    datasource_id: 'entity:node'
+    property_path: field_list_integer
+    type: integer
+    dependencies:
+      config:
+        - field.storage.node.field_list_integer
+  field_list_string:
+    label: field_list_string
+    datasource_id: 'entity:node'
+    property_path: field_list_string
+    type: string
+    dependencies:
+      config:
+        - field.storage.node.field_list_string
+  field_string:
+    label: field_string
+    datasource_id: 'entity:node'
+    property_path: field_string
+    type: string
+    dependencies:
+      config:
+        - field.storage.node.field_string
+  field_string_long:
+    label: field_string_long
+    datasource_id: 'entity:node'
+    property_path: field_string_long
+    type: text
+    dependencies:
+      config:
+        - field.storage.node.field_string_long
+  field_text:
+    label: field_text
+    datasource_id: 'entity:node'
+    property_path: field_text
+    type: string
+    dependencies:
+      config:
+        - field.storage.node.field_text
+  field_text_long:
+    label: field_text_long
+    datasource_id: 'entity:node'
+    property_path: field_text_long
+    type: text
+    dependencies:
+      config:
+        - field.storage.node.field_text_long
+  field_text_with_summary:
+    label: field_text_with_summary
+    datasource_id: 'entity:node'
+    property_path: field_text_with_summary
+    type: text
+    dependencies:
+      config:
+        - field.storage.node.field_text_with_summary
+  field_timestamp:
+    label: field_timestamp
+    datasource_id: 'entity:node'
+    property_path: field_timestamp
+    type: date
+    dependencies:
+      config:
+        - field.storage.node.field_timestamp
   node_grants:
     label: 'Node access information'
     property_path: search_api_node_grants
@@ -56,32 +207,6 @@ field_settings:
     indexed_locked: true
     type_locked: true
     hidden: true
-  promote:
-    label: 'Promoted to front page'
-    datasource_id: 'entity:node'
-    property_path: promote
-    type: boolean
-    dependencies:
-      module:
-        - node
-  rendered_item:
-    label: 'Rendered HTML output'
-    property_path: rendered_item
-    type: text
-    configuration:
-      roles:
-        anonymous: anonymous
-      view_mode:
-        'entity:media':
-          gallery: default
-          image: default
-          instagram: default
-          pinterest: default
-          twitter: default
-          video: default
-        'entity:node':
-          article: search_index
-          page: search_index
   status:
     label: status
     datasource_id: 'entity:node'
@@ -89,22 +214,6 @@ field_settings:
     type: boolean
     indexed_locked: true
     type_locked: true
-    dependencies:
-      module:
-        - node
-  sticky:
-    label: 'Sticky at top of lists'
-    datasource_id: 'entity:node'
-    property_path: sticky
-    type: boolean
-    dependencies:
-      module:
-        - node
-  title:
-    label: Title
-    datasource_id: 'entity:node'
-    property_path: title
-    type: string
     dependencies:
       module:
         - node
@@ -142,42 +251,59 @@ processor_settings:
       preprocess_query: -30
   hierarchy:
     fields:
-      field_channel: taxonomy_term-parent
+      field_entity_reference__taxonomy: taxonomy_term-parent
     weights:
       preprocess_index: -45
   html_filter:
     all_fields: true
     fields:
-      - name
-      - rendered_item
-      - title
+      - field_decimal
+      - field_email
+      - field_link
+      - field_list_string
+      - field_string
+      - field_string_long
+      - field_text
+      - field_text_long
+      - field_text_with_summary
       - type
     title: true
     alt: true
     tags:
       b: 2
+      em: 1
       h1: 5
       h2: 3
       h3: 2
       strong: 2
+      u: 1
     weights:
       preprocess_index: -15
       preprocess_query: -15
   ignorecase:
     all_fields: true
     fields:
-      - name
-      - rendered_item
-      - title
+      - field_decimal
+      - field_email
+      - field_link
+      - field_list_string
+      - field_string
+      - field_string_long
+      - field_text
+      - field_text_long
+      - field_text_with_summary
       - type
     weights:
       preprocess_index: -20
       preprocess_query: -20
+  language_with_fallback: {  }
   rendered_item: {  }
   tokenizer:
     all_fields: true
     fields:
-      - rendered_item
+      - field_string_long
+      - field_text_long
+      - field_text_with_summary
     spaces: ''
     overlap_cjk: 1
     minimum_word_size: '3'

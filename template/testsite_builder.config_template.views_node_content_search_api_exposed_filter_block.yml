@@ -1,7 +1,7 @@
 template:
   entity_type: 'node'
   source: 'block.block.thunder_admin_exposedformcontent_search_apipage_1'
-  fallback: 'testsite_builder.config_template.block_view_search_api_exposed_form.fallback'
+  fallback: 'testsite_builder.config_template.views_node_content_search_api_exposed_filter_block.fallback'
   pre_generate_clone: []
   post_generate_clone: []
   generate_per_field: []
