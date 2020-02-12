@@ -38,6 +38,11 @@ template:
       name: 'display.page_1.display_options.path'
   field_type_mapping:
     -
+      type: 'entity_reference'
+      source_field: 'type'
+      match_rules:
+        target_type: node_type
+    -
       type: 'string'
       source_field: 'title'
     -
