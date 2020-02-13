@@ -183,6 +183,10 @@ class ConfigTemplateDefinition {
   public function getCleanConfig() {
     $config = $this->getSourceConfig();
 
+    if (empty($this->definition['generate_per_field'])) {
+      return $config;
+    }
+
     // Clean-Up field related properties, that will be generated dynamically.
     foreach ($this->definition['generate_per_field'] as $generate_per_field) {
       NestedArray::setValue($config, explode('.', $generate_per_field['name']), []);
@@ -202,6 +206,10 @@ class ConfigTemplateDefinition {
    */
   protected function getDynamicDefinitions($key) {
     $dynamic_mapping_definitions = [];
+    if (empty($this->definition[$key])) {
+      return $dynamic_mapping_definitions;
+    }
+
     foreach ($this->definition[$key] as $generate_per_field) {
       $path = array_filter(explode('.', $generate_per_field['name']));
 

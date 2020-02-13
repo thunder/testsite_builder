@@ -64,6 +64,10 @@ class ViewField extends Generic {
     $source_field_config['table'] = $storage->getTableMapping()->getFieldTableName($field_name);
     $source_field_config['entity_field'] = $field_name;
 
+    if ($source_field_config['plugin_id'] === 'search_api_field') {
+      unset($source_field_config['entity_field']);
+    }
+
     // Apply custom change related to view filter plugin.
     $source_field_config = $config_template_merge->applyMerge($source_field_config, []);
 

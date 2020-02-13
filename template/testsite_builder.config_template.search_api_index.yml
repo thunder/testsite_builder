@@ -11,21 +11,6 @@ template:
     -
       type: 'search_api_field_settings'
       name: 'field_settings'
-#    -
-#      type: 'view_style_info'
-#      name: 'display.default.display_options.style.options.info'
-#    -
-#      type: 'view_field'
-#      name: 'display.default.display_options.fields'
-#    -
-#      type: 'view_filter'
-#      name: 'display.default.display_options.filters'
-#    -
-#      type: 'view_config_cache_tag'
-#      name: 'display.default.cache_metadata.tags'
-#    -
-#      type: 'view_config_cache_tag'
-#      name: 'display.page_1.cache_metadata.tags'
   generate_per_bundle: []
   field_type_mapping:
     -
@@ -36,22 +21,21 @@ template:
       source_field: 'promote'
     -
       type: 'entity_reference'
-      exclude_generation_type:
-        - 'view_dependency_config'
-        - 'search_api_field_settings'
-#      source_field: 'field_channel'
+      soruce_field: 'type'
+      match_rules:
+        target_type: 'node_type'
     -
-      type: 'date'
-      exclude_generation_type:
-        - 'view_dependency_config'
-        - 'search_api_field_settings'
+      type: 'entity_reference'
+      soruce_field: 'field_channel'
+      match_rules:
+        target_type: 'taxonomy_term'
+        cardinality: 1
     -
-      type: 'integer'
-      exclude_generation_type:
-        - 'view_dependency_config'
-        - 'search_api_field_settings'
-#    -
-#      type: '_exclude_template_'
-#      source_field: 'dummy'
-#      match_rules:
-#        cardinality: 1
+      type: 'entity_reference'
+      soruce_field: 'field_tags'
+      match_rules:
+        target_type: 'taxonomy_term'
+        cardinality: -1
+    -
+      type: 'changed'
+      source_field: 'node_changed'

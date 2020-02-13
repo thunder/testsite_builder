@@ -10,7 +10,7 @@ dependencies:
     - field.storage.node.field_decimal
     - field.storage.node.field_email
     - field.storage.node.field_entity_reference__media
-    - field.storage.node.field_entity_reference__taxonomy
+    - field.storage.node.field_entity_reference__taxonomy_term
     - field.storage.node.field_entity_reference__user
     - field.storage.node.field_file
     - field.storage.node.field_float
@@ -72,14 +72,14 @@ field_settings:
     dependencies:
       config:
         - field.storage.node.field_entity_reference__media
-  field_entity_reference__taxonomy:
-    label: field_entity_reference__taxonomy
+  field_entity_reference__taxonomy_term:
+    label: field_entity_reference__taxonomy_term
     datasource_id: 'entity:node'
-    property_path: field_entity_reference__taxonomy
+    property_path: field_entity_reference__taxonomy_term
     type: integer
     dependencies:
       config:
-        - field.storage.node.field_entity_reference__taxonomy
+        - field.storage.node.field_entity_reference__taxonomy_term
   field_entity_reference__user:
     label: field_entity_reference__user
     datasource_id: 'entity:node'
@@ -251,7 +251,7 @@ processor_settings:
       preprocess_query: -30
   hierarchy:
     fields:
-      field_entity_reference__taxonomy: taxonomy_term-parent
+      field_entity_reference__taxonomy_term: taxonomy_term-parent
     weights:
       preprocess_index: -45
   html_filter:

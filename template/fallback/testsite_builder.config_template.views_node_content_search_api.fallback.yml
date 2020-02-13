@@ -35,7 +35,7 @@ dependencies:
     - text
     - views_bulk_operations
 id: all_feilds
-label: 'All Feilds'
+label: 'All Fields'
 module: views
 description: ''
 tag: ''

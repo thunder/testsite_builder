@@ -37,7 +37,7 @@ class ViewFieldPluginSearchApiField extends Generic {
    * {@inheritdoc}
    */
   public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
-    return new ConfigTemplateMerge(ConfigTemplateMerge::ADD_KEY, "{$source_field_config['table']}_{$bundle}", 'table');
+    return new ConfigTemplateMerge(ConfigTemplateMerge::ADD_KEY, "search_api_index_content_{$bundle}", 'table');
   }
 
 }

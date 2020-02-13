@@ -45,6 +45,13 @@ class ConfigTemplateDefinitionResolver {
   protected $fieldManager;
 
   /**
+   * The queue of field configurations what should be created.
+   *
+   * @var array
+   */
+  protected $fieldTemplatesQueue = [];
+
+  /**
    * The config template definition constructor.
    *
    * @param \Drupal\testsite_builder\ConfigTemplateTypePluginManager $config_template_type_manager
@@ -139,8 +146,11 @@ class ConfigTemplateDefinitionResolver {
     $config = $this->templateDefinition->getCleanConfig();
 
     // Copy pre generate.
-    foreach ($this->templateDefinition->getKey('pre_generate_clone') as $copy_config_key) {
-      $config = $this->copyFromSource($config, $copy_config_key['from'], $copy_config_key['to']);
+    $pre_generate_clone = $this->templateDefinition->getKey('pre_generate_clone');
+    if (!empty($pre_generate_clone)) {
+      foreach ($pre_generate_clone as $clone_config_key) {
+        $config = $this->copyFromSource($config, $clone_config_key['from'], $clone_config_key['to']);
+      }
     }
 
     // Generate dynamic configuration for fields.
@@ -154,8 +164,11 @@ class ConfigTemplateDefinitionResolver {
     }
 
     // Copy post generate.
-    foreach ($this->templateDefinition->getKey('post_generate_clone') as $copy_config_key) {
-      $config = $this->copyFromSource($config, $copy_config_key['from'], $copy_config_key['to']);
+    $post_generate_clone = $this->templateDefinition->getKey('post_generate_clone');
+    if (!empty($post_generate_clone)) {
+      foreach ($post_generate_clone as $clone_config_key) {
+        $config = $this->copyFromSource($config, $clone_config_key['from'], $clone_config_key['to']);
+      }
     }
 
     return $config;
@@ -242,7 +255,13 @@ class ConfigTemplateDefinitionResolver {
       $field_configuration_template = ConfigTemplateDefinition::createFromDefinition($this->templateDefinition->getTemplateDirectory(), $field_template);
 
       $config_resolver = ConfigTemplateDefinitionResolver::create(\Drupal::getContainer());
-      $config_resolver->createConfigForField($field_configuration_template, $entity_type, $bundle, $field_definition->getName());
+      $this->fieldTemplatesQueue[] = [
+        'config_resolver' => $config_resolver,
+        'field_configuration_template' => $field_configuration_template,
+        'entity_type' => $entity_type,
+        'bundle' => $bundle,
+        'field_name' => $field_definition->getName(),
+      ];
     }
   }
 
@@ -316,6 +335,22 @@ class ConfigTemplateDefinitionResolver {
     $bundle_config['id'] = "{$source_config['id']}_{$bundle}";
 
     $this->saveConfig($bundle_config, $config_name);
+
+    // After base bundle configuration is saved, process queue for fields.
+    $this->processFieldQueue();
+  }
+
+  /**
+   * Handle configuration creation for delayed field related configurations.
+   */
+  protected function processFieldQueue() {
+    // Process field queue.
+    $job_definition = array_pop($this->fieldTemplatesQueue);
+    while (!empty($job_definition)) {
+      $job_definition['config_resolver']->createConfigForField($job_definition['field_configuration_template'], $job_definition['entity_type'], $job_definition['bundle'], $job_definition['field_name']);
+
+      $job_definition = array_pop($this->fieldTemplatesQueue);
+    }
   }
 
   /**

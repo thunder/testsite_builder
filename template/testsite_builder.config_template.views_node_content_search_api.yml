@@ -46,9 +46,6 @@ template:
       name: ''
   field_type_mapping:
     -
-      type: 'string'
-      source_field: 'title'
-    -
       type: 'boolean'
       source_field: 'status'
       templates:
@@ -56,22 +53,59 @@ template:
           source: 'facets.facet.status'
           fallback: 'testsite_builder.config_template.views_node_content_search_api_facet.fallback'
           full_template_plugin: 'view_search_api_facet'
-          pre_generate_clone: []
-          post_generate_clone: []
-          generate_per_field: []
-          generate_per_bundle: []
         -
           source: 'block.block.thunder_admin_facet_status'
           fallback: 'testsite_builder.config_template.views_node_content_search_api_facet_block.fallback'
           full_template_plugin: 'view_search_api_facet_block'
-          pre_generate_clone: []
-          post_generate_clone: []
-          generate_per_field: []
-          generate_per_bundle: []
     -
-      type: 'language'
+      type: 'entity_reference'
+      soruce_field: 'type'
+      match_rules:
+        target_type: 'node_type'
+      templates:
+        -
+          source: 'facets.facet.type'
+          fallback: 'testsite_builder.config_template.views_node_content_search_api_facet.fallback'
+          full_template_plugin: 'view_search_api_facet'
+        -
+          source: 'block.block.thunder_admin_facet_type'
+          fallback: 'testsite_builder.config_template.views_node_content_search_api_facet_block.fallback'
+          full_template_plugin: 'view_search_api_facet_block'
       exclude_generation_type:
-        - '_skip_sort_'
+        - 'view_filter'
+    -
+      type: 'entity_reference'
+      soruce_field: 'field_tags'
+      match_rules:
+        target_type: 'taxonomy_term'
+        cardinality: -1
+      templates:
+        -
+          source: 'facets.facet.tags'
+          fallback: 'testsite_builder.config_template.views_node_content_search_api_facet.fallback'
+          full_template_plugin: 'view_search_api_facet'
+        -
+          source: 'block.block.thunder_admin_facet_tags'
+          fallback: 'testsite_builder.config_template.views_node_content_search_api_facet_block.fallback'
+          full_template_plugin: 'view_search_api_facet_block'
+    -
+      type: 'entity_reference'
+      soruce_field: 'field_channel'
+      match_rules:
+        target_type: 'taxonomy_term'
+        cardinality: 1
+      templates:
+        -
+          source: 'facets.facet.channel'
+          fallback: 'testsite_builder.config_template.views_node_content_search_api_facet.fallback'
+          full_template_plugin: 'view_search_api_facet'
+        -
+          source: 'block.block.thunder_admin_facet_channel'
+          fallback: 'testsite_builder.config_template.views_node_content_search_api_facet_block.fallback'
+          full_template_plugin: 'view_search_api_facet_block'
+    -
+      type: 'string_long'
+      exclude_generation_type:
         - 'view_dependency_config'
         - 'view_style_column'
         - 'view_style_info'
@@ -81,97 +115,6 @@ template:
     -
       type: 'metatag'
       exclude_generation_type:
-        - '_skip_sort_'
-        - 'view_dependency_config'
-        - 'view_style_column'
-        - 'view_style_info'
-        - 'view_field'
-        - 'view_filter'
-        - 'view_config_cache_tag'
-    -
-      type: 'integer'
-      exclude_generation_type:
-        - '_skip_sort_'
-        - 'view_dependency_config'
-        - 'view_style_column'
-        - 'view_style_info'
-        - 'view_field'
-        - 'view_filter'
-        - 'view_config_cache_tag'
-    -
-      type: 'uuid'
-      exclude_generation_type:
-        - '_skip_sort_'
-        - 'view_dependency_config'
-        - 'view_style_column'
-        - 'view_style_info'
-        - 'view_field'
-        - 'view_filter'
-        - 'view_config_cache_tag'
-    -
-      type: 'entity_reference'
-      exclude_generation_type:
-        - '_skip_sort_'
-        - 'view_dependency_config'
-        - 'view_style_column'
-        - 'view_style_info'
-        - 'view_field'
-        - 'view_filter'
-        - 'view_config_cache_tag'
-    -
-      type: 'entity_reference_revisions'
-      exclude_generation_type:
-        - '_skip_sort_'
-        - 'view_dependency_config'
-        - 'view_style_column'
-        - 'view_style_info'
-        - 'view_field'
-        - 'view_filter'
-        - 'view_config_cache_tag'
-    -
-      type: 'string_long'
-      exclude_generation_type:
-        - '_skip_sort_'
-        - 'view_dependency_config'
-        - 'view_style_column'
-        - 'view_style_info'
-        - 'view_field'
-        - 'view_filter'
-        - 'view_config_cache_tag'
-    -
-      type: 'list_string'
-      exclude_generation_type:
-        - '_skip_sort_'
-        - 'view_dependency_config'
-        - 'view_style_column'
-        - 'view_style_info'
-        - 'view_field'
-        - 'view_filter'
-        - 'view_config_cache_tag'
-    -
-      type: 'created'
-      exclude_generation_type:
-        - '_skip_sort_'
-        - 'view_dependency_config'
-        - 'view_style_column'
-        - 'view_style_info'
-        - 'view_field'
-        - 'view_filter'
-        - 'view_config_cache_tag'
-    -
-      type: 'changed'
-      exclude_generation_type:
-        - '_skip_sort_'
-        - 'view_dependency_config'
-        - 'view_style_column'
-        - 'view_style_info'
-        - 'view_field'
-        - 'view_filter'
-        - 'view_config_cache_tag'
-    -
-      type: 'timestamp'
-      exclude_generation_type:
-        - '_skip_sort_'
         - 'view_dependency_config'
         - 'view_style_column'
         - 'view_style_info'
