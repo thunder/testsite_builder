@@ -357,14 +357,6 @@ class ConfigTemplateDefinitionResolver {
       $bundle_config['id']
     );
 
-    // TODO:Find solution for adjusting copied filters that are not field based.
-    if ($config_name->getFullName() === "views.view.{$this->collection->getId()}_node_{$bundle}") {
-      foreach ($bundle_config['display']['default']['display_options']['filters'] as $filter_id => $filter_definition) {
-        $filter_definition['table'] = $bundle_config['base_table'];
-        $bundle_config['display']['default']['display_options']['filters'][$filter_id] = $filter_definition;
-      }
-    }
-
     $this->saveConfig($bundle_config, $config_name);
 
     // After base bundle configuration is saved, process queue for fields.
