@@ -19,7 +19,7 @@ class ViewBundlePath extends Generic {
    * {@inheritdoc}
    */
   public function getConfigChangesForBundle(string $collection_id, string $entity_type, string $bundle, $source_config) {
-    return new ConfigTemplateMerge(ConfigTemplateMerge::CHANGE_VALUE, "admin/{$collection_id}_{$entity_type}_{$bundle}");
+    return new ConfigTemplateMerge(ConfigTemplateMerge::CHANGE_VALUE, "admin/{$collection_id}_{$entity_type}_{$bundle}/{$entity_type}");
   }
 
 }
