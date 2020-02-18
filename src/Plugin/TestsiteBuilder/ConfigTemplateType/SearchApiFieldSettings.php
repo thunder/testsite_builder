@@ -18,9 +18,9 @@ class SearchApiFieldSettings extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+  public function getConfigChangesForField(string $collection_id, string $entity_type, string $bundle, string $field_name, $source_field_config) {
     if (empty($source_field_config)) {
-      return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+      return parent::getConfigChangesForField($collection_id, $entity_type, $bundle, $field_name, $source_field_config);
     }
 
     $source_field_config['label'] = "Label: {$field_name}";

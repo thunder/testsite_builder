@@ -1,79 +1,81 @@
-template:
-  entity_type: 'node'
-  source: 'views.view.content'
-  fallback: 'testsite_builder.config_template.views_node_content.fallback'
-  pre_generate_clone:
-    -
-      from: 'display.default.display_options.fields.node_bulk_form'
-      to: 'display.default.display_options.fields.node_bulk_form'
-  post_generate_clone:
-    -
-      from: 'display.default.display_options.fields.operations'
-      to: 'display.default.display_options.fields.operations'
-  generate_per_field:
-    -
-      type: 'view_dependency_config'
-      name: 'dependencies.config'
-    -
-      type: 'view_style_column'
-      name: 'display.default.display_options.style.options.columns'
-    -
-      type: 'view_style_info'
-      name: 'display.default.display_options.style.options.info'
-    -
-      type: 'view_field'
-      name: 'display.default.display_options.fields'
-    -
-      type: 'view_filter'
-      name: 'display.default.display_options.filters'
-    -
-      type: 'view_config_cache_tag'
-      name: 'display.default.cache_metadata.tags'
-    -
-      type: 'view_config_cache_tag'
-      name: 'display.page_1.cache_metadata.tags'
-  generate_per_bundle:
-    -
-      type: 'view_bundle_path'
-      name: 'display.page_1.display_options.path'
-  field_type_mapping:
-    -
-      type: 'entity_reference'
-      source_field: 'type'
-      match_rules:
-        target_type: node_type
-    -
-      type: 'string'
-      source_field: 'title'
-    -
-      type: 'changed'
-      source_field: 'changed'
-    -
-      type: 'created'
-      source_field: 'created'
-    -
-      type: 'language'
-      source_field: 'langcode'
-    -
-      type: 'string_long'
-      exclude_generation_type:
-        - 'view_dependency_config'
-        - 'view_style_column'
-        - 'view_style_info'
-        - 'view_field'
-        - 'view_filter'
-        - 'view_config_cache_tag'
-    -
-      type: 'metatag'
-      exclude_generation_type:
-        - 'view_dependency_config'
-        - 'view_style_column'
-        - 'view_style_info'
-        - 'view_field'
-        - 'view_filter'
-        - 'view_config_cache_tag'
-    -
-      type: '_exclude_template_'
-      source_field: 'dummy'
-      match_rules:
-        cardinality: 1
+id: 't0'
+entity_type: 'node'
+templates:
+  view:
+    source: 'views.view.content'
+    fallback: 'testsite_builder.config_template.views_node_content.fallback'
+    pre_generate_clone:
+      -
+        from: 'display.default.display_options.fields.node_bulk_form'
+        to: 'display.default.display_options.fields.node_bulk_form'
+    post_generate_clone:
+      -
+        from: 'display.default.display_options.fields.operations'
+        to: 'display.default.display_options.fields.operations'
+    generate_per_field:
+      -
+        type: 'view_dependency_config'
+        name: 'dependencies.config'
+      -
+        type: 'view_style_column'
+        name: 'display.default.display_options.style.options.columns'
+      -
+        type: 'view_style_info'
+        name: 'display.default.display_options.style.options.info'
+      -
+        type: 'view_field'
+        name: 'display.default.display_options.fields'
+      -
+        type: 'view_filter'
+        name: 'display.default.display_options.filters'
+      -
+        type: 'view_config_cache_tag'
+        name: 'display.default.cache_metadata.tags'
+      -
+        type: 'view_config_cache_tag'
+        name: 'display.page_1.cache_metadata.tags'
+    generate_per_bundle:
+      -
+        type: 'view_bundle_path'
+        name: 'display.page_1.display_options.path'
+    field_type_mapping:
+      -
+        type: 'entity_reference'
+        source_field: 'type'
+        match_rules:
+          target_type: node_type
+      -
+        type: 'string'
+        source_field: 'title'
+      -
+        type: 'changed'
+        source_field: 'changed'
+      -
+        type: 'created'
+        source_field: 'created'
+      -
+        type: 'language'
+        source_field: 'langcode'
+      -
+        type: 'string_long'
+        exclude_generation_type:
+          - 'view_dependency_config'
+          - 'view_style_column'
+          - 'view_style_info'
+          - 'view_field'
+          - 'view_filter'
+          - 'view_config_cache_tag'
+      -
+        type: 'metatag'
+        exclude_generation_type:
+          - 'view_dependency_config'
+          - 'view_style_column'
+          - 'view_style_info'
+          - 'view_field'
+          - 'view_filter'
+          - 'view_config_cache_tag'
+      -
+        type: '_exclude_template_'
+        source_field: 'dummy'
+        match_rules:
+          cardinality: 1

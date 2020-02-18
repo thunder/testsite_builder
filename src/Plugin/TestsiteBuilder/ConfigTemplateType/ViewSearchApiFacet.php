@@ -18,15 +18,15 @@ class ViewSearchApiFacet extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+  public function getConfigChangesForField(string $collection_id, string $entity_type, string $bundle, string $field_name, $source_field_config) {
     $facet_source_id_parts = explode('__', $source_field_config['facet_source_id']);
-    $facet_source_id_parts[1] .= "_{$bundle}";
+    $view_page = end($facet_source_id_parts);
 
     $config_replacement = [
       'name' => "Label: {$field_name}",
       'url_alias' => $field_name,
       'field_identifier' => $field_name,
-      'facet_source_id' => implode('__', $facet_source_id_parts),
+      'facet_source_id' => "search_api:views_page__{$collection_id}_{$entity_type}_{$bundle}__{$view_page}",
     ];
 
     return new ConfigTemplateMerge(ConfigTemplateMerge::UPDATE_VALUE, $config_replacement);

@@ -44,14 +44,14 @@ class ViewField extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+  public function getConfigChangesForField(string $collection_id, string $entity_type, string $bundle, string $field_name, $source_field_config) {
     if (empty($source_field_config)) {
-      return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+      return parent::getConfigChangesForField($collection_id, $entity_type, $bundle, $field_name, $source_field_config);
     }
 
     /** @var \Drupal\testsite_builder\ConfigTemplateTypeInterface $view_field_plugin_config_template_type */
     $view_field_plugin_config_template_type = $this->configTemplateTypeManager->createInstance('view_field_plugin_' . $source_field_config['plugin_id']);
-    $config_template_merge = $view_field_plugin_config_template_type->getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+    $config_template_merge = $view_field_plugin_config_template_type->getConfigChangesForField($collection_id, $entity_type, $bundle, $field_name, $source_field_config);
 
     /** @var \Drupal\Core\Entity\Sql\SqlEntityStorageInterface $storage */
     $storage = $this->entityTypeManager->getStorage($entity_type);
@@ -60,10 +60,10 @@ class ViewField extends Generic {
     $source_field_config['field'] = $field_name;
     $source_field_config['label'] = "Label: {$field_name}";
 
-    // TODO: find solution.
     $source_field_config['table'] = $storage->getTableMapping()->getFieldTableName($field_name);
     $source_field_config['entity_field'] = $field_name;
 
+    // TODO: find solution.
     if ($source_field_config['plugin_id'] === 'search_api_field') {
       unset($source_field_config['entity_field']);
     }

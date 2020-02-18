@@ -52,6 +52,20 @@ class ConfigTemplateDefinitionResolver {
   protected $fieldTemplatesQueue = [];
 
   /**
+   * The configuration template collection.
+   *
+   * @var \Drupal\testsite_builder\ConfigTemplateDefinitionCollection
+   */
+  protected $collection;
+
+  /**
+   * The entity type.
+   *
+   * @var string
+   */
+  protected $entityType;
+
+  /**
    * The config template definition constructor.
    *
    * @param \Drupal\testsite_builder\ConfigTemplateTypePluginManager $config_template_type_manager
@@ -61,7 +75,7 @@ class ConfigTemplateDefinitionResolver {
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $field_manager
    *   The field manager service.
    */
-  public function __construct(ConfigTemplateTypePluginManager $config_template_type_manager, EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $field_manager) {
+  protected function __construct(ConfigTemplateTypePluginManager $config_template_type_manager, EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $field_manager) {
     $this->configTemplateTypeManager = $config_template_type_manager;
     $this->entityTypeManager = $entity_type_manager;
     $this->fieldManager = $field_manager;
@@ -72,16 +86,23 @@ class ConfigTemplateDefinitionResolver {
    *
    * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
    *   The symfony container.
+   * @param \Drupal\testsite_builder\ConfigTemplateDefinitionCollection $collection
+   *   The config template collection.
    *
    * @return \Drupal\testsite_builder\ConfigTemplateDefinitionResolver
    *   The instance of config template definition resolver.
    */
-  public static function create(ContainerInterface $container): ConfigTemplateDefinitionResolver {
-    return new static(
+  public static function create(ContainerInterface $container, ConfigTemplateDefinitionCollection $collection): ConfigTemplateDefinitionResolver {
+    $instance = new static(
       $container->get('testsite_builder.config_template_type_manager'),
       $container->get('entity_type.manager'),
       $container->get('entity_field.manager')
     );
+
+    $instance->collection = $collection;
+    $instance->entityType = $collection->getEntityType();
+
+    return $instance;
   }
 
   /**
@@ -160,7 +181,7 @@ class ConfigTemplateDefinitionResolver {
 
     // Generate dynamic configuration for bundle.
     if (!empty($dynamic_bundle_definitions)) {
-      $config = $this->applyConfigurationForBundle($bundle, $config, $dynamic_bundle_definitions);
+      $config = $this->applyConfigurationForBundle($entity_type, $bundle, $config, $dynamic_bundle_definitions);
     }
 
     // Copy post generate.
@@ -224,7 +245,7 @@ class ConfigTemplateDefinitionResolver {
         );
 
         /** @var \Drupal\testsite_builder\ConfigTemplateMerge $config_template_merge */
-        $config_template_merge = $config_template_type_plugin->getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+        $config_template_merge = $config_template_type_plugin->getConfigChangesForField($this->collection->getId(), $entity_type, $bundle, $field_name, $source_field_config);
         $config = $config_template_merge->applyMerge($config, $dynamic_field_definition['path']);
       }
 
@@ -251,14 +272,15 @@ class ConfigTemplateDefinitionResolver {
    * @throws \Exception
    */
   protected function createAllFieldConfigurations(string $entity_type, string $bundle, FieldDefinitionInterface $field_definition, array $field_templates) {
-    foreach ($field_templates as $field_template) {
-      $field_configuration_template = ConfigTemplateDefinition::createFromDefinition($this->templateDefinition->getTemplateDirectory(), $field_template);
+    $field_collection = ConfigTemplateDefinitionCollection::createFromTemplates($this->collection->getId(), $this->entityType, $field_templates, $this->collection->getDirectory());
+    $config_resolver = ConfigTemplateDefinitionResolver::create(\Drupal::getContainer(), $field_collection);
 
-      $config_resolver = ConfigTemplateDefinitionResolver::create(\Drupal::getContainer());
+    foreach ($field_collection->getDefinitionNames() as $definition_name) {
+      $field_configuration_template = $field_collection->getDefinition($definition_name);
+
       $this->fieldTemplatesQueue[] = [
         'config_resolver' => $config_resolver,
         'field_configuration_template' => $field_configuration_template,
-        'entity_type' => $entity_type,
         'bundle' => $bundle,
         'field_name' => $field_definition->getName(),
       ];
@@ -290,7 +312,7 @@ class ConfigTemplateDefinitionResolver {
 
     // Create ID for config.
     array_pop($config_parts);
-    $config_id = "{$field_name}_{$bundle}";
+    $config_id = "{$this->collection->getId()}_{$entity_type}_{$bundle}_{$field_name}";
     $field_config['id'] = $config_id;
     array_push($config_parts, $config_id);
 
@@ -299,7 +321,7 @@ class ConfigTemplateDefinitionResolver {
       $config_template_type_plugin = $this->configTemplateTypeManager->createInstance($this->templateDefinition->getKey('full_template_plugin'));
 
       /** @var \Drupal\testsite_builder\ConfigTemplateMerge $config_template_merge */
-      $config_template_merge = $config_template_type_plugin->getConfigChangesForField($entity_type, $bundle, $field_name, $field_config);
+      $config_template_merge = $config_template_type_plugin->getConfigChangesForField($this->collection->getId(), $entity_type, $bundle, $field_name, $field_config);
       $field_config = $config_template_merge->applyMerge($field_config, []);
     }
 
@@ -313,26 +335,35 @@ class ConfigTemplateDefinitionResolver {
    *
    * @param \Drupal\testsite_builder\ConfigTemplateDefinition $configuration_template
    *   The configuration template definition.
-   * @param string $entity_type
-   *   The entity type.
    * @param string $bundle
    *   The bundle.
    *
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  public function createConfigForBundle(ConfigTemplateDefinition $configuration_template, string $entity_type, string $bundle) {
+  public function createConfigForBundle(ConfigTemplateDefinition $configuration_template, string $bundle) {
     $this->templateDefinition = $configuration_template;
 
     $dynamic_field_mapping_definitions = $this->templateDefinition->getDynamicFieldDefinitions();
     $dynamic_bundle_definitions = $this->templateDefinition->getDynamicBundleDefinitions();
 
-    $bundle_config = $this->createConfig($entity_type, $bundle, $dynamic_bundle_definitions, $dynamic_field_mapping_definitions);
-    $config_name = ConfigName::createByFullName($this->templateDefinition->getKey('source') . "_{$bundle}");
+    $bundle_config = $this->createConfig($this->entityType, $bundle, $dynamic_bundle_definitions, $dynamic_field_mapping_definitions);
 
     // Create ID for config.
-    $source_config = $this->templateDefinition->getSourceConfig();
-    $bundle_config['id'] = "{$source_config['id']}_{$bundle}";
+    $bundle_config['id'] = "{$this->collection->getId()}_{$this->entityType}_{$bundle}";
+    $config_name = ConfigName::createByTypeName(
+      ConfigName::createByFullName($this->templateDefinition->getKey('source'))
+        ->getType(),
+      $bundle_config['id']
+    );
+
+    // TODO:Find solution for adjusting copied filters that are not field based.
+    if ($config_name->getFullName() === "views.view.{$this->collection->getId()}_node_{$bundle}") {
+      foreach ($bundle_config['display']['default']['display_options']['filters'] as $filter_id => $filter_definition) {
+        $filter_definition['table'] = $bundle_config['base_table'];
+        $bundle_config['display']['default']['display_options']['filters'][$filter_id] = $filter_definition;
+      }
+    }
 
     $this->saveConfig($bundle_config, $config_name);
 
@@ -342,14 +373,16 @@ class ConfigTemplateDefinitionResolver {
 
   /**
    * Handle configuration creation for delayed field related configurations.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   * @throws \Drupal\Core\Entity\EntityStorageException
    */
   protected function processFieldQueue() {
     // Process field queue.
-    $job_definition = array_pop($this->fieldTemplatesQueue);
-    while (!empty($job_definition)) {
-      $job_definition['config_resolver']->createConfigForField($job_definition['field_configuration_template'], $job_definition['entity_type'], $job_definition['bundle'], $job_definition['field_name']);
-
-      $job_definition = array_pop($this->fieldTemplatesQueue);
+    foreach ($this->fieldTemplatesQueue as $job_definition) {
+      /** @var \Drupal\testsite_builder\ConfigTemplateDefinitionResolver $resolver */
+      $resolver = $job_definition['config_resolver'];
+      $resolver->createConfigForField($job_definition['field_configuration_template'], $this->entityType, $job_definition['bundle'], $job_definition['field_name']);
     }
   }
 
@@ -378,6 +411,8 @@ class ConfigTemplateDefinitionResolver {
   /**
    * Applies dynamic configuration for bundle.
    *
+   * @param string $entity_type
+   *   The entity type.
    * @param string $bundle
    *   The bundle name.
    * @param array $config
@@ -390,7 +425,7 @@ class ConfigTemplateDefinitionResolver {
    *
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
-  protected function applyConfigurationForBundle($bundle, array $config, array $dynamic_bundle_definitions) {
+  protected function applyConfigurationForBundle($entity_type, $bundle, array $config, array $dynamic_bundle_definitions) {
     foreach ($dynamic_bundle_definitions as $dynamic_bundle_definition) {
       $source_bundle_config = $this->templateDefinition->getDynamicSourceDefinition($dynamic_bundle_definition['path']);
 
@@ -398,7 +433,7 @@ class ConfigTemplateDefinitionResolver {
       $config_template_type_plugin = $this->configTemplateTypeManager->createInstance($dynamic_bundle_definition['type']);
 
       /** @var \Drupal\testsite_builder\ConfigTemplateMerge $config_template_merge */
-      $config_template_merge = $config_template_type_plugin->getConfigChangesForBundle($bundle, $source_bundle_config);
+      $config_template_merge = $config_template_type_plugin->getConfigChangesForBundle($this->collection->getId(), $entity_type, $bundle, $source_bundle_config);
       $config = $config_template_merge->applyMerge($config, $dynamic_bundle_definition['path']);
     }
 

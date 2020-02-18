@@ -2,7 +2,6 @@
 
 namespace Drupal\testsite_builder;
 
-use Drupal\Component\Serialization\SerializationInterface;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\config_update\ConfigRevertInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -15,13 +14,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @package Drupal\testsite_builder
  */
 class ConfigTemplateDefinition {
-
-  /**
-   * The Yaml serializer.
-   *
-   * @var \Drupal\Component\Serialization\SerializationInterface
-   */
-  protected $yamlSerializer;
 
   /**
    * The config reverter service from config update.
@@ -61,13 +53,10 @@ class ConfigTemplateDefinition {
   /**
    * The config template definition constructor.
    *
-   * @param \Drupal\Component\Serialization\SerializationInterface $yaml_serializer
-   *   The Yaml serializer.
    * @param \Drupal\config_update\ConfigRevertInterface $config_reverter
    *   The config reverter service.
    */
-  public function __construct(SerializationInterface $yaml_serializer, ConfigRevertInterface $config_reverter) {
-    $this->yamlSerializer = $yaml_serializer;
+  public function __construct(ConfigRevertInterface $config_reverter) {
     $this->configReverter = $config_reverter;
   }
 
@@ -82,27 +71,8 @@ class ConfigTemplateDefinition {
    */
   protected static function create(ContainerInterface $container): ConfigTemplateDefinition {
     return new static(
-      $container->get('serialization.yaml'),
       $container->get('config_update.config_update')
     );
-  }
-
-  /**
-   * Create instance from file.
-   *
-   * @param string $file_name
-   *   The template mapping configuration file.
-   *
-   * @return \Drupal\testsite_builder\ConfigTemplateDefinition
-   *   Returns instance of config template definition.
-   *
-   * @throws \Exception
-   */
-  public static function createFromFile($file_name) {
-    $instance = static::create(\Drupal::getContainer());
-    $template_definition = $instance->yamlSerializer->decode(file_get_contents($file_name));
-
-    return static::createFromDefinition(dirname($file_name), $template_definition['template']);
   }
 
   /**
@@ -116,28 +86,22 @@ class ConfigTemplateDefinition {
   }
 
   /**
-   * Create new config template definition from defintion array.
+   * Create new config template definition from definition array.
    *
-   * @param string $template_directory
-   *   The directory where template is located.
    * @param array $definition
-   *   The config template defintion.
+   *   The config template definition.
+   * @param array $fallback
+   *   The fallback configuration.
    *
    * @return \Drupal\testsite_builder\ConfigTemplateDefinition
    *   Returns instance of config template definition.
    *
    * @throws \Exception
    */
-  public static function createFromDefinition($template_directory, array $definition) {
+  public static function createFromDefinition(array $definition, array $fallback = []) {
     $instance = static::create(\Drupal::getContainer());
     $instance->definition = $definition;
-    $instance->templateDirectory = $template_directory;
-
-    // Load fallback.
-    if (empty($instance->definition['fallback'])) {
-      throw new \Exception("Configuration template definition requires fallback config.");
-    }
-    $instance->fallbackConfig = $instance->yamlSerializer->decode(file_get_contents($instance->templateDirectory . '/fallback/' . $instance->definition['fallback'] . '.yml'));
+    $instance->fallbackConfig = $fallback;
 
     return $instance;
   }
@@ -245,6 +209,10 @@ class ConfigTemplateDefinition {
           return $source_field_value;
         }
       }
+    }
+
+    if (empty($this->fallbackConfig)) {
+      return [];
     }
 
     // Use fallback field.

@@ -101,4 +101,24 @@ class ConfigTemplateMerge {
     return $config;
   }
 
+  /**
+   * Sets config template merge tactic data.
+   *
+   * @param mixed $data
+   *   The data for merge tactic.
+   */
+  public function setData($data) {
+    $this->data = $data;
+  }
+
+  /**
+   * Gets config template merge tactic data.
+   *
+   * @return mixed
+   *   Returns data for config merge tactic.
+   */
+  public function getData() {
+    return $this->data;
+  }
+
 }

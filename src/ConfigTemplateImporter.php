@@ -77,21 +77,21 @@ class ConfigTemplateImporter {
    * @param string $file_name
    *   The file name.
    *
-   * @throws \Drupal\Component\Plugin\Exception\PluginException
-   * @throws \Drupal\Core\Entity\EntityStorageException
    * @throws \Exception
    */
   public function loadTemplate($file_name) {
     // 1. load template mapping definition.
-    $template_definition = ConfigTemplateDefinition::createFromFile($file_name);
+    $collection = ConfigTemplateDefinitionCollection::createFromFile($file_name);
 
     // 2. get template resolver.
-    $config_resolver = ConfigTemplateDefinitionResolver::create(\Drupal::getContainer());
+    $config_resolver = ConfigTemplateDefinitionResolver::create(\Drupal::getContainer(), $collection);
 
     // 3. create configuration for bundles.
-    $bundles = array_keys($this->bundleInfo->getBundleInfo($template_definition->getKey('entity_type')));
-    foreach ($bundles as $bundle) {
-      $config_resolver->createConfigForBundle($template_definition, $template_definition->getKey('entity_type'), $bundle);
+    $bundles = array_keys($this->bundleInfo->getBundleInfo($collection->getEntityType()));
+    foreach ($collection->getDefinitionNames() as $definition_name) {
+      foreach ($bundles as $bundle) {
+        $config_resolver->createConfigForBundle($collection->getDefinition($definition_name), $bundle);
+      }
     }
   }
 

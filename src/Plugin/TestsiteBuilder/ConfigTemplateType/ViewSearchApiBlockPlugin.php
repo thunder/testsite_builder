@@ -23,11 +23,11 @@ class ViewSearchApiBlockPlugin extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigChangesForBundle(string $bundle, $source_config) {
+  public function getConfigChangesForBundle(string $collection_id, string $entity_type, string $bundle, $source_config) {
     $exposed_filter_plugin = explode('-', $source_config);
-    $exposed_filter_plugin[0] .= "_{$bundle}";
+    $view_page = end($exposed_filter_plugin);
 
-    return new ConfigTemplateMerge(ConfigTemplateMerge::CHANGE_VALUE, implode('-', $exposed_filter_plugin));
+    return new ConfigTemplateMerge(ConfigTemplateMerge::CHANGE_VALUE, "views_exposed_filter_block:{$collection_id}_{$entity_type}_{$bundle}-{$view_page}");
   }
 
 }

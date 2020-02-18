@@ -18,13 +18,13 @@ class ViewSearchApiFacetBlock extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+  public function getConfigChangesForField(string $collection_id, string $entity_type, string $bundle, string $field_name, $source_field_config) {
     $config_replacement = [
-      'plugin' => "facet_block:{$field_name}_{$bundle}",
+      'plugin' => "facet_block:{$collection_id}_{$entity_type}_{$bundle}_{$field_name}",
       'settings' => [
-        'id' => "facet_block:{$field_name}_{$bundle}",
+        'id' => "facet_block:{$collection_id}_{$entity_type}_{$bundle}_{$field_name}",
         'label' => "Label: {$field_name}",
-        'block_id' => "thunder_admin_facet_{$field_name}_{$bundle}",
+        'block_id' => "{$collection_id}_{$entity_type}_{$bundle}_{$field_name}",
       ],
     ];
 

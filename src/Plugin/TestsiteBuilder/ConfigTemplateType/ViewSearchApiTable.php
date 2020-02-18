@@ -18,8 +18,8 @@ class ViewSearchApiTable extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigChangesForBundle(string $bundle, $source_config) {
-    return new ConfigTemplateMerge(ConfigTemplateMerge::ADD_KEY, "{$source_config['base_table']}_{$bundle}", 'base_table');
+  public function getConfigChangesForBundle(string $collection_id, string $entity_type, string $bundle, $source_config) {
+    return new ConfigTemplateMerge(ConfigTemplateMerge::CHANGE_VALUE, "search_api_index_{$collection_id}_{$entity_type}_{$bundle}");
   }
 
 }
