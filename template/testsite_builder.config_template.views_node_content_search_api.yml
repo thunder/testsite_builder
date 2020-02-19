@@ -25,22 +25,34 @@ templates:
         type: 'entity_reference'
         soruce_field: 'type'
         match_rules:
-          target_type: 'node_type'
+          storage_settings:
+            target_type: 'node_type'
       -
         type: 'entity_reference'
         soruce_field: 'field_channel'
         match_rules:
-          target_type: 'taxonomy_term'
+          storage_settings:
+            target_type: 'taxonomy_term'
           cardinality: 1
       -
         type: 'entity_reference'
         soruce_field: 'field_tags'
         match_rules:
-          target_type: 'taxonomy_term'
+          storage_settings:
+            target_type: 'taxonomy_term'
           cardinality: -1
       -
         type: 'changed'
         source_field: 'node_changed'
+      -
+        type: 'entity_reference'
+        soruce_field: 'type'
+        match_rules:
+          storage_settings:
+            target_type: 'block'
+        exclude_generation_type:
+          - 'view_dependency_config'
+          - 'search_api_field_settings'
   view:
     source: 'views.view.content_search_api'
     fallback: 'testsite_builder.config_template.views_node_content_search_api.fallback'
@@ -111,7 +123,8 @@ templates:
         type: 'entity_reference'
         soruce_field: 'type'
         match_rules:
-          target_type: 'node_type'
+          storage_settings:
+            target_type: 'node_type'
         templates:
           -
             source: 'facets.facet.type'
@@ -127,7 +140,8 @@ templates:
         type: 'entity_reference'
         soruce_field: 'field_tags'
         match_rules:
-          target_type: 'taxonomy_term'
+          storage_settings:
+            target_type: 'taxonomy_term'
           cardinality: -1
         templates:
           -
@@ -142,7 +156,8 @@ templates:
         type: 'entity_reference'
         soruce_field: 'field_channel'
         match_rules:
-          target_type: 'taxonomy_term'
+          storage_settings:
+            target_type: 'taxonomy_term'
           cardinality: 1
         templates:
           -
@@ -153,6 +168,19 @@ templates:
             source: 'block.block.thunder_admin_facet_channel'
             fallback: 'testsite_builder.config_template.views_node_content_search_api_facet_block.fallback'
             full_template_plugin: 'view_search_api_facet_block'
+      -
+        type: 'entity_reference'
+        soruce_field: 'type'
+        match_rules:
+          storage_settings:
+            target_type: 'block'
+        exclude_generation_type:
+          - 'view_dependency_config'
+          - 'view_style_column'
+          - 'view_style_info'
+          - 'view_field'
+          - 'view_filter'
+          - 'view_config_cache_tag'
       -
         type: 'string_long'
         exclude_generation_type:

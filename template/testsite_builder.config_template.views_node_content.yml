@@ -43,7 +43,8 @@ templates:
         type: 'entity_reference'
         source_field: 'type'
         match_rules:
-          target_type: node_type
+          storage_settings:
+            target_type: node_type
       -
         type: 'string'
         source_field: 'title'
