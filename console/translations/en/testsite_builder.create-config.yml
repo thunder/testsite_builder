@@ -11,7 +11,7 @@ messages:
   config_create: 'Preparation - Creating new bundles and fields...'
   config_create_fix_missing_config: 'Mending - Fixing missing configuration dependencies...'
   config_create_missing_config: 'Missing config <fg=red>%s</> required by: <comment>%s</comment>.'
-  config_create_from_template: 'Mending - Importing configurations from templates...'
+  config_create_from_template: 'Enhancing - Importing configurations from templates...'
   config_create_imported_template: 'Imported template config: <comment>%s</comment>.'
   config_success: 'Configuration successfully created.'
   content_invalid_keep_files: 'You are not able to use --keep-content-files without --create-content option.'

@@ -36,20 +36,20 @@ class ViewFilterPluginTaxonomyIndexTid extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+  public function getConfigChangesForField(string $collection_id, string $entity_type, string $bundle, string $field_name, $source_field_config) {
     if (empty($source_field_config)) {
-      return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+      return parent::getConfigChangesForField($collection_id, $entity_type, $bundle, $field_name, $source_field_config);
     }
 
     $field_definitions = $this->entityFieldManager->getFieldDefinitions($entity_type, $bundle);
 
     if (empty($field_definitions[$field_name])) {
-      return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+      return parent::getConfigChangesForField($collection_id, $entity_type, $bundle, $field_name, $source_field_config);
     }
 
     $field_settings = $field_definitions[$field_name]->getSettings();
     if (empty($field_settings['handler_settings']['target_bundles'])) {
-      return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+      return parent::getConfigChangesForField($collection_id, $entity_type, $bundle, $field_name, $source_field_config);
     }
 
     reset($field_settings['handler_settings']['target_bundles']);

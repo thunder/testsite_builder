@@ -61,14 +61,14 @@ class ViewFilter extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+  public function getConfigChangesForField(string $collection_id, string $entity_type, string $bundle, string $field_name, $source_field_config) {
     if (empty($source_field_config)) {
-      return parent::getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+      return parent::getConfigChangesForField($collection_id, $entity_type, $bundle, $field_name, $source_field_config);
     }
 
     /** @var \Drupal\testsite_builder\ConfigTemplateTypeInterface $view_filter_plugin_config_template_type */
     $view_filter_plugin_config_template_type = $this->configTemplateTypeManager->createInstance('view_filter_plugin_' . $source_field_config['plugin_id']);
-    $config_template_merge = $view_filter_plugin_config_template_type->getConfigChangesForField($entity_type, $bundle, $field_name, $source_field_config);
+    $config_template_merge = $view_filter_plugin_config_template_type->getConfigChangesForField($collection_id, $entity_type, $bundle, $field_name, $source_field_config);
 
     // Apply custom change related to view filter plugin.
     $source_field_config = $config_template_merge->applyMerge($source_field_config, []);

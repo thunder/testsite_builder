@@ -132,17 +132,22 @@ class CreateConfigCommand extends ContainerAwareCommand {
     $io->newLine();
     $io->comment($this->trans('commands.testsite_builder.create-config.messages.config_create_from_template'));
     $this->beforeAction();
-    $imported_templates = $this->configCreator->importTemplateConfigurations();
+    $import_templates_result = $this->configCreator->importTemplateConfigurations();
     $this->afterAction();
 
     // List imported templates.
-    foreach ($imported_templates as $template_file) {
+    foreach ($import_templates_result['imported'] as $template_file) {
       $io->warningLite(
         sprintf(
           $this->trans('commands.testsite_builder.create-config.messages.config_create_imported_template'),
           $template_file
         )
       );
+    }
+
+    // List import template failures.
+    foreach ($import_templates_result['errors'] as $error_message) {
+      $io->errorLite($error_message);
     }
 
     $io->newLine();

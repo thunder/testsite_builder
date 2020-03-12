@@ -18,6 +18,7 @@ class ConfigTemplateMerge {
   const ADD_VALUE = 1;
   const ADD_KEY = 2;
   const CHANGE_VALUE = 3;
+  const UPDATE_VALUE = 4;
 
   /**
    * The merge tactic.
@@ -91,7 +92,33 @@ class ConfigTemplateMerge {
       NestedArray::setValue($config, $path, $this->data);
     }
 
+    if ($this->tactic === static::UPDATE_VALUE) {
+      $array_value = NestedArray::getValue($config, $path);
+      $new_config = NestedArray::mergeDeep($array_value, $this->data);
+      NestedArray::setValue($config, $path, $new_config);
+    }
+
     return $config;
+  }
+
+  /**
+   * Sets config template merge tactic data.
+   *
+   * @param mixed $data
+   *   The data for merge tactic.
+   */
+  public function setData($data) {
+    $this->data = $data;
+  }
+
+  /**
+   * Gets config template merge tactic data.
+   *
+   * @return mixed
+   *   Returns data for config merge tactic.
+   */
+  public function getData() {
+    return $this->data;
   }
 
 }
