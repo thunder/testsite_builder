@@ -47,7 +47,7 @@ class ConfigTemplateImporter {
    *
    * @var \Drupal\Core\Entity\EntityFieldManagerInterface
    */
-  protected $fieldManager;
+  protected $entityFieldManager;
 
   /**
    * Constructs a new ConfigTemplateImporter object.
@@ -60,15 +60,15 @@ class ConfigTemplateImporter {
    *   The entity type manager service.
    * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $bundle_info
    *   The entity type bundle info service.
-   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $field_manager
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
    *   The field manager service.
    */
-  public function __construct(ConfigTemplateTypePluginManager $config_template_type_manager, ConfigFactoryInterface $config_factory, EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $bundle_info, EntityFieldManagerInterface $field_manager) {
+  public function __construct(ConfigTemplateTypePluginManager $config_template_type_manager, ConfigFactoryInterface $config_factory, EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $bundle_info, EntityFieldManagerInterface $entity_field_manager) {
     $this->configTemplateTypeManager = $config_template_type_manager;
     $this->configFactory = $config_factory;
     $this->entityTypeManager = $entity_type_manager;
     $this->bundleInfo = $bundle_info;
-    $this->fieldManager = $field_manager;
+    $this->entityFieldManager = $entity_field_manager;
   }
 
   /**
@@ -85,7 +85,7 @@ class ConfigTemplateImporter {
     $collection = ConfigTemplateDefinitionCollection::createFromFile($file_name);
 
     // 2. get template resolver.
-    $config_resolver = ConfigTemplateDefinitionResolver::create(\Drupal::getContainer(), $collection);
+    $config_resolver = new ConfigTemplateDefinitionResolver($collection, $this->configTemplateTypeManager, $this->entityTypeManager, $this->entityFieldManager);
 
     // 3. create configuration for bundles.
     $bundles = array_keys($this->bundleInfo->getBundleInfo($collection->getEntityType()));

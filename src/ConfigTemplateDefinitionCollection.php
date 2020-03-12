@@ -145,7 +145,7 @@ class ConfigTemplateDefinitionCollection {
    */
   public static function createFromFile($file_name): ConfigTemplateDefinitionCollection {
     $instance = static::create(\Drupal::getContainer());
-    $collection = $instance->yamlSerializer->decode(file_get_contents($file_name));
+    $collection = $instance->yamlSerializer::decode(file_get_contents($file_name));
 
     return static::createFromTemplates($collection['id'], $collection['entity_type'], $collection['templates'], dirname($file_name));
   }
@@ -209,7 +209,7 @@ class ConfigTemplateDefinitionCollection {
     $definition = $this->templates[$name];
     $fallback = [];
     if (!empty($definition['fallback'])) {
-      $fallback = $this->yamlSerializer->decode(file_get_contents($this->directory . '/fallback/' . $definition['fallback'] . '.yml'));
+      $fallback = $this->yamlSerializer::decode(file_get_contents($this->directory . '/fallback/' . $definition['fallback'] . '.yml'));
     }
 
     return ConfigTemplateDefinition::createFromDefinition($definition, $fallback);

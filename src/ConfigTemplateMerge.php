@@ -14,11 +14,11 @@ class ConfigTemplateMerge {
   /**
    * Enum of merge tactics.
    */
-  const SKIP = 0;
-  const ADD_VALUE = 1;
-  const ADD_KEY = 2;
-  const CHANGE_VALUE = 3;
-  const UPDATE_VALUE = 4;
+  public const SKIP = 0;
+  public const ADD_VALUE = 1;
+  public const ADD_KEY = 2;
+  public const CHANGE_VALUE = 3;
+  public const UPDATE_VALUE = 4;
 
   /**
    * The merge tactic.
