@@ -1,6 +1,6 @@
 name: 'Testsite builder'
 type: module
-description: 'Provide a Drupal console command to create a site from a report file.'
+description: 'Provide a Drush command to create a site from a report file.'
 package: Thunder
 core_version_requirement: ^8.8 || ^9
 dependencies:

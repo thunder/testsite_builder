@@ -31,5 +31,15 @@
             "name": "Alex Pott",
             "email": "alex.a.pott@gmail.com"
         }
-    ]
+    ],
+    "require-dev": {
+        "drush/drush": "~10.2"
+    },
+    "extra": {
+        "drush": {
+            "services": {
+                "drush.services.yml": "^9"
+            }
+        }
+    }
 }
