@@ -4,6 +4,7 @@ namespace Drupal\testsite_builder\Plugin\testsite_builder\FieldType;
 
 use Drupal\Component\Plugin\PluginBase;
 use Drupal\config_update\ConfigRevertInterface;
+use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
@@ -38,6 +39,13 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   protected $fieldTypePluginManager;
 
   /**
+   * The entity display repository service.
+   *
+   * @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface
+   */
+  protected $entityDisplayRepository;
+
+  /**
    * The created field manager service.
    *
    * @var \Drupal\testsite_builder\CreatedFieldManager
@@ -61,10 +69,11 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
   /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManagerInterface $fieldTypePluginManager, CreatedFieldManager $createdFieldManager, ConfigRevertInterface $configReverter, array $widgetMapping) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entityTypeManager, FieldTypePluginManagerInterface $fieldTypePluginManager, EntityDisplayRepositoryInterface $entityDisplayRepository, CreatedFieldManager $createdFieldManager, ConfigRevertInterface $configReverter, array $widgetMapping) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityTypeManager = $entityTypeManager;
     $this->fieldTypePluginManager = $fieldTypePluginManager;
+    $this->entityDisplayRepository = $entityDisplayRepository;
     $this->createdFieldManager = $createdFieldManager;
     $this->configReverter = $configReverter;
     $this->widgetMapping = $widgetMapping;
@@ -80,6 +89,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
       $plugin_definition,
       $container->get('entity_type.manager'),
       $container->get('plugin.manager.field.field_type'),
+      $container->get('entity_display.repository'),
       $container->get('testsite_builder.created_field_manager'),
       $container->get('config_update.config_update'),
       $container->get('config.factory')->get('testsite_builder.settings')->get('widget_mapping')
@@ -90,7 +100,7 @@ class FieldTypeBase extends PluginBase implements FieldTypeInterface, ContainerF
    * {@inheritdoc}
    */
   public function createField() : FieldConfigInterface {
-    $form_display = entity_get_form_display($this->configuration['entity_type'], $this->configuration['bundle_type'], 'default');
+    $form_display = $this->entityDisplayRepository->getFormDisplay($this->configuration['entity_type'], $this->configuration['bundle_type']);
 
     $field_storage_config = $this->getFieldStorageConfig($this->configuration);
     if (!($field_storage = $this->createdFieldManager->getFieldStorage($field_storage_config, $this->configuration['bundle_type']))) {
