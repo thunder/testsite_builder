@@ -6,7 +6,7 @@ The Testsite Builder provides Drush commands for the creation of test sites base
 Your project should be set up to use composer for installing the required modules. Projects that have a different setup are
 not supported.
 
-This module provides Drush commands only. If you do not already use Srush, install it before continuing.
+This module provides Drush commands only. If you do not already use Drush, install it before continuing.
 
 ## Installation
 
