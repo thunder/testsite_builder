@@ -755,6 +755,7 @@ class ContentCreator {
           break;
 
         case 0:
+          $this->storage->setInSubProcess();
           $db_conn = $this->getPdoConnection();
 
           // Some performance boost flags.
@@ -764,6 +765,7 @@ class ContentCreator {
 
           // Import tables distributed to this fork.
           foreach ($list_of_tables[$fork_index] as $table_name) {
+            var_dump($table_name);
             $csv_file_name = $this->outputDirectory . '/' . $table_name . '.csv';
             $db_conn->query("SET autocommit = 0")->execute();
             $import_query = "LOAD DATA INFILE '{$csv_file_name}'" . PHP_EOL .

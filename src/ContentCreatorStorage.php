@@ -25,6 +25,17 @@ class ContentCreatorStorage {
    */
   protected $sampleDataStorage = [];
 
+  protected $inSubProcess = FALSE;
+
+
+  public function setInSubProcess () {
+    $this->inSubProcess = TRUE;
+  }
+
+  public function inSubprocess() {
+    return $this->inSubProcess;
+  }
+
   /**
    * Add config.
    *
