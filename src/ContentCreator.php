@@ -4,6 +4,7 @@ namespace Drupal\testsite_builder;
 
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Database\Database;
+use Drush\Runtime\Runtime;
 
 /**
  * Class ContentCreator.
@@ -718,6 +719,8 @@ class ContentCreator {
    *   Flag to keep CSV files after import.
    */
   public function importCsvFiles($keep_content_files = FALSE) {
+    $this->storage->startContentCreationProcess();
+
     // We are trying to be nice. (fe. 8 cores -> 6 forks).
     $number_of_forks = ceil($this->getNumberOfCores() / 1.5);
 
@@ -755,7 +758,6 @@ class ContentCreator {
           break;
 
         case 0:
-          $this->storage->setInSubProcess();
           $db_conn = $this->getPdoConnection();
 
           // Some performance boost flags.
@@ -765,7 +767,6 @@ class ContentCreator {
 
           // Import tables distributed to this fork.
           foreach ($list_of_tables[$fork_index] as $table_name) {
-            var_dump($table_name);
             $csv_file_name = $this->outputDirectory . '/' . $table_name . '.csv';
             $db_conn->query("SET autocommit = 0")->execute();
             $import_query = "LOAD DATA INFILE '{$csv_file_name}'" . PHP_EOL .
@@ -782,6 +783,10 @@ class ContentCreator {
             if (!$keep_content_files) {
               unlink($csv_file_name);
             }
+          }
+
+          if (PHP_SAPI === 'cli') {
+            Runtime::setCompleted();
           }
 
           // We have to exit from child process here!

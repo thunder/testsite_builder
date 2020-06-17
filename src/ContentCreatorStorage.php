@@ -25,15 +25,28 @@ class ContentCreatorStorage {
    */
   protected $sampleDataStorage = [];
 
-  protected $inSubProcess = FALSE;
+  /**
+   * Indicates if the content creation is currently running.
+   *
+   * @var bool
+   */
+  protected $inContentCreationProcess = FALSE;
 
-
-  public function setInSubProcess () {
-    $this->inSubProcess = TRUE;
+  /**
+   * Flag that content creation is running.
+   */
+  public function startContentCreationProcess() {
+    $this->inContentCreationProcess = TRUE;
   }
 
-  public function inSubprocess() {
-    return $this->inSubProcess;
+  /**
+   * Indicates if the content creation is currently running.
+   *
+   * @return bool
+   *   Content creation is running or not.
+   */
+  public function inContentCreationProcess() {
+    return $this->inContentCreationProcess;
   }
 
   /**

@@ -69,13 +69,10 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
    *   The event object.
    */
   public function onKernelTerminate(PostResponseEvent $event) {
-
-    if ($this->contentCreatorStorage->inSubprocess()) {
-    var_dump('KERNAL PANIC');
+    // We don't want terminate events like cache or router rebuild to run.
+    if ($this->contentCreatorStorage->inContentCreationProcess()) {
       $event->stopPropagation();
-
     }
-
   }
 
   /**
