@@ -785,7 +785,7 @@ class ContentCreator {
             }
           }
 
-          if (PHP_SAPI === 'cli') {
+          if (class_exists('\Drush\Runtime\Runtime')) {
             Runtime::setCompleted();
           }
 
