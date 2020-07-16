@@ -4,6 +4,7 @@ namespace Drupal\testsite_builder;
 
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Database\Database;
+use Drush\Runtime\Runtime;
 
 /**
  * Class ContentCreator.
@@ -718,6 +719,8 @@ class ContentCreator {
    *   Flag to keep CSV files after import.
    */
   public function importCsvFiles($keep_content_files = FALSE) {
+    $this->storage->startContentCreationProcess();
+
     // We are trying to be nice. (fe. 8 cores -> 6 forks).
     $number_of_forks = ceil($this->getNumberOfCores() / 1.5);
 
@@ -780,6 +783,10 @@ class ContentCreator {
             if (!$keep_content_files) {
               unlink($csv_file_name);
             }
+          }
+
+          if (class_exists('\Drush\Runtime\Runtime')) {
+            Runtime::setCompleted();
           }
 
           // We have to exit from child process here!

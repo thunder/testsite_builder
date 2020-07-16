@@ -4,6 +4,8 @@
     "type": "drupal-module",
     "license": "GPL-2.0-or-later",
     "require": {
+        "drupal/config_update": "^1.6",
+        "drupal/update_helper": "^2.0",
         "ext-json": "*",
         "ext-pcntl": "*",
         "php": ">=7.0.0"
@@ -29,5 +31,15 @@
             "name": "Alex Pott",
             "email": "alex.a.pott@gmail.com"
         }
-    ]
+    ],
+    "require-dev": {
+        "drush/drush": "~10.2"
+    },
+    "extra": {
+        "drush": {
+            "services": {
+                "drush.services.yml": "^9"
+            }
+        }
+    }
 }
