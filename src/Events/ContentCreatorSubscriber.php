@@ -7,6 +7,9 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\field\FieldConfigInterface;
 use Drupal\testsite_builder\ContentCreatorStorage;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpKernel\Event\KernelEvent;
+use Symfony\Component\HttpKernel\Event\PostResponseEvent;
+use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * The content creator entity subscriber.
@@ -53,7 +56,23 @@ class ContentCreatorSubscriber implements EventSubscriberInterface {
       ConfigCreatorEvents::FIELD_CREATE => [
         ['onFieldCreate', 10],
       ],
+      KernelEvents::TERMINATE => [
+        ['onKernelTerminate', 5000],
+      ],
     ];
+  }
+
+  /**
+   * Invoked by the terminate kernel event.
+   *
+   * @param \Symfony\Component\HttpKernel\Event\PostResponseEvent $event
+   *   The event object.
+   */
+  public function onKernelTerminate(PostResponseEvent $event) {
+    // We don't want terminate events like cache or router rebuild to run.
+    if ($this->contentCreatorStorage->inContentCreationProcess()) {
+      $event->stopPropagation();
+    }
   }
 
   /**

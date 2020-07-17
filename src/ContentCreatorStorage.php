@@ -26,6 +26,30 @@ class ContentCreatorStorage {
   protected $sampleDataStorage = [];
 
   /**
+   * Indicates if the content creation is currently running.
+   *
+   * @var bool
+   */
+  protected $inContentCreationProcess = FALSE;
+
+  /**
+   * Flag that content creation is running.
+   */
+  public function startContentCreationProcess() {
+    $this->inContentCreationProcess = TRUE;
+  }
+
+  /**
+   * Indicates if the content creation is currently running.
+   *
+   * @return bool
+   *   Content creation is running or not.
+   */
+  public function inContentCreationProcess() {
+    return $this->inContentCreationProcess;
+  }
+
+  /**
    * Add config.
    *
    * @param array $path
