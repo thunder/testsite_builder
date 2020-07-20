@@ -30,13 +30,6 @@ class ConfigTemplateDefinition {
   protected $definition;
 
   /**
-   * The directory where template is located.
-   *
-   * @var string
-   */
-  protected $templateDirectory;
-
-  /**
    * The template source config.
    *
    * @var array
@@ -73,16 +66,6 @@ class ConfigTemplateDefinition {
     return new static(
       $container->get('config_update.config_update')
     );
-  }
-
-  /**
-   * Get directory where template is located.
-   *
-   * @return string
-   *   Returns directory where template is located.
-   */
-  public function getTemplateDirectory() {
-    return $this->templateDirectory;
   }
 
   /**
