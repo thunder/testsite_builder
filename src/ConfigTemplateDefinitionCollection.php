@@ -89,9 +89,11 @@ class ConfigTemplateDefinitionCollection {
       }
 
       $field_mappings = $config_template_definition->getKey('field_type_mapping');
-      foreach ($field_mappings as $field_mapping) {
-        if (!empty($field_mapping['templates'])) {
-          ConfigTemplateDefinitionCollection::createFromTemplates($this->getId(), $this->entityType, $field_mapping['templates'], $this->getDirectory());
+      if (!empty($field_mappings)) {
+        foreach ($field_mappings as $field_mapping) {
+          if (!empty($field_mapping['templates'])) {
+            ConfigTemplateDefinitionCollection::createFromTemplates($this->getId(), $this->entityType, $field_mapping['templates'], $this->getDirectory());
+          }
         }
       }
     }

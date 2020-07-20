@@ -151,9 +151,11 @@ class ConfigTemplateDefinition {
       return $config;
     }
 
-    // Clean-Up field related properties, that will be generated dynamically.
-    foreach ($this->definition['generate_per_field'] as $generate_per_field) {
-      NestedArray::setValue($config, explode('.', $generate_per_field['name']), []);
+    if (!empty($config)) {
+      // Clean-Up field related properties, that will be generated dynamically.
+      foreach ($this->definition['generate_per_field'] as $generate_per_field) {
+        NestedArray::setValue($config, explode('.', $generate_per_field['name']), []);
+      }
     }
 
     return $config;
@@ -203,10 +205,12 @@ class ConfigTemplateDefinition {
     // Use defined mapping to source field.
     if (!empty($source_field_names)) {
       $source_config = $this->getSourceConfig();
-      foreach ($source_field_names as $source_field_name) {
-        $source_field_value = NestedArray::getValue($source_config, array_merge($path, [$source_field_name]));
-        if (!empty($source_field_value)) {
-          return $source_field_value;
+      if (!empty($source_config)) {
+        foreach ($source_field_names as $source_field_name) {
+          $source_field_value = NestedArray::getValue($source_config, array_merge($path, [$source_field_name]));
+          if (!empty($source_field_value)) {
+            return $source_field_value;
+          }
         }
       }
     }
@@ -237,7 +241,10 @@ class ConfigTemplateDefinition {
    */
   public function getDynamicSourceDefinition(array $path) {
     $source_config = $this->getSourceConfig();
-    $source_definition = NestedArray::getValue($source_config, $path);
+
+    if (!empty($source_config)) {
+      $source_definition = NestedArray::getValue($source_config, $path);
+    }
 
     if (!empty($source_definition)) {
       return $source_definition;

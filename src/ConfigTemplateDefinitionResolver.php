@@ -111,17 +111,19 @@ class ConfigTemplateDefinitionResolver {
       $path_to = explode('.', $path_to);
     }
 
-    $source_value = NestedArray::getValue($source_config, $path_from);
-    $destination_value = NestedArray::getValue($config, $path_to);
+    if (!empty($source_config)) {
+      $source_value = NestedArray::getValue($source_config, $path_from);
+      $destination_value = NestedArray::getValue($config, $path_to);
 
-    if (!empty($destination_value) && is_array($destination_value)) {
-      $source_value = NestedArray::mergeDeepArray([
-        $destination_value,
-        $source_value,
-      ]);
+      if (!empty($destination_value) && is_array($destination_value)) {
+        $source_value = NestedArray::mergeDeepArray([
+          $destination_value,
+          $source_value,
+        ]);
+      }
+
+      NestedArray::setValue($config, $path_to, $source_value);
     }
-
-    NestedArray::setValue($config, $path_to, $source_value);
 
     return $config;
   }
