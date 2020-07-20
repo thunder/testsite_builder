@@ -86,6 +86,28 @@ class ConfigTemplateDefinitionResolver {
   }
 
   /**
+   * Creates instance of config template definition.
+   *
+   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
+   *   The symfony container.
+   * @param \Drupal\testsite_builder\ConfigTemplateDefinitionCollection $collection
+   *   The config template collection.
+   *
+   * @return \Drupal\testsite_builder\ConfigTemplateDefinitionResolver
+   *   The instance of config template definition resolver.
+   */
+  public static function create(ContainerInterface $container, ConfigTemplateDefinitionCollection $collection) {
+    $instance = new static(
+      $collection,
+      $container->get('testsite_builder.config_template_type_manager'),
+      $container->get('entity_type.manager'),
+      $container->get('entity_field.manager')
+    );
+
+    return $instance;
+  }
+
+  /**
    * Copy configuration parts from source to destination config.
    *
    * In case of part of array is copied, it will merge arrays.
