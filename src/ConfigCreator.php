@@ -254,6 +254,12 @@ class ConfigCreator {
     /** @var array $missing_configurations */
     $missing_configurations = [];
 
+    // Hack in a media.type.image.
+    // @todo create dependencies of missing configuration.
+    $missing_config_name = ConfigName::createByFullName('media.type.image');
+    $config_importer = $this->configImporterPluginManager->createInstance($missing_config_name->getType());
+    $config_importer->importConfig('', $missing_config_name->getFullName());
+
     $all_configs = $this->configFactory->listAll();
     foreach ($all_configs as $config) {
       $config_dependency = new ConfigEntityDependency(
@@ -264,11 +270,9 @@ class ConfigCreator {
       $missing_configs = array_diff($config_dependency->getDependencies('config'), $all_configs);
       foreach ($missing_configs as $missing_config) {
         $missing_config_name = ConfigName::createByFullName($missing_config);
-        if (!isset($missing_configurations[$missing_config])) {
-          /** @var \Drupal\testsite_builder\ConfigImporterInterface $config_importer */
-          $config_importer = $this->configImporterPluginManager->createInstance($missing_config_name->getType());
-          $config_importer->importConfig($config, $missing_config_name->getFullName());
-        }
+        /** @var \Drupal\testsite_builder\ConfigImporterInterface $config_importer */
+        $config_importer = $this->configImporterPluginManager->createInstance($missing_config_name->getType());
+        $config_importer->importConfig($config, $missing_config_name->getFullName());
         $missing_configurations[$missing_config][] = $config;
       }
     }
