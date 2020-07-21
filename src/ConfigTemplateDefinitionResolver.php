@@ -86,6 +86,28 @@ class ConfigTemplateDefinitionResolver {
   }
 
   /**
+   * Creates instance of config template definition.
+   *
+   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
+   *   The symfony container.
+   * @param \Drupal\testsite_builder\ConfigTemplateDefinitionCollection $collection
+   *   The config template collection.
+   *
+   * @return \Drupal\testsite_builder\ConfigTemplateDefinitionResolver
+   *   The instance of config template definition resolver.
+   */
+  public static function create(ContainerInterface $container, ConfigTemplateDefinitionCollection $collection) {
+    $instance = new static(
+      $collection,
+      $container->get('testsite_builder.config_template_type_manager'),
+      $container->get('entity_type.manager'),
+      $container->get('entity_field.manager')
+    );
+
+    return $instance;
+  }
+
+  /**
    * Copy configuration parts from source to destination config.
    *
    * In case of part of array is copied, it will merge arrays.
@@ -111,17 +133,19 @@ class ConfigTemplateDefinitionResolver {
       $path_to = explode('.', $path_to);
     }
 
-    $source_value = NestedArray::getValue($source_config, $path_from);
-    $destination_value = NestedArray::getValue($config, $path_to);
+    if (!empty($source_config)) {
+      $source_value = NestedArray::getValue($source_config, $path_from);
+      $destination_value = NestedArray::getValue($config, $path_to);
 
-    if (!empty($destination_value) && is_array($destination_value)) {
-      $source_value = NestedArray::mergeDeepArray([
-        $destination_value,
-        $source_value,
-      ]);
+      if (!empty($destination_value) && is_array($destination_value)) {
+        $source_value = NestedArray::mergeDeepArray([
+          $destination_value,
+          $source_value,
+        ]);
+      }
+
+      NestedArray::setValue($config, $path_to, $source_value);
     }
-
-    NestedArray::setValue($config, $path_to, $source_value);
 
     return $config;
   }
