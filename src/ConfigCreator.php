@@ -264,12 +264,12 @@ class ConfigCreator {
       $missing_configs = array_diff($config_dependency->getDependencies('config'), $all_configs);
       foreach ($missing_configs as $missing_config) {
         $missing_config_name = ConfigName::createByFullName($missing_config);
-
-        /** @var \Drupal\testsite_builder\ConfigImporterInterface $config_importer */
-        $config_importer = $this->configImporterPluginManager->createInstance($missing_config_name->getType());
-        $config_importer->importConfig($config, $missing_config_name->getFullName());
-
-        $missing_configurations[$config][] = $missing_config;
+        if (!isset($missing_configurations)) {
+          /** @var \Drupal\testsite_builder\ConfigImporterInterface $config_importer */
+          $config_importer = $this->configImporterPluginManager->createInstance($missing_config_name->getType());
+          $config_importer->importConfig($config, $missing_config_name->getFullName());
+        }
+        $missing_configurations[$missing_config][] = $config;
       }
     }
 

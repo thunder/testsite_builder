@@ -89,59 +89,51 @@ class CreateConfigCommand extends DrushCommands {
       return;
     }
 
-    $this->io()->comment('Cleanup - Deleting existing bundles, fields...');
+    $this->io()->section('Cleanup - Deleting existing bundles, fields...');
     $this->beforeAction();
     $this->configCreator->cleanup();
     $this->afterAction();
 
     $this->io()->newLine();
-    $this->io()->comment('Preparation - Creating new bundles and fields...');
+    $this->io()->section('Preparation - Creating new bundles and fields...');
     $this->beforeAction();
     $this->configCreator->create();
     $this->afterAction();
 
     $this->io()->newLine();
-    $this->io()->comment('Mending - Fixing missing configuration dependencies...');
+    $this->io()->section('Mending - Fixing missing configuration dependencies...');
     $this->beforeAction();
     $imported_configurations = $this->configCreator->fixMissingConfiguration();
-    $this->afterAction();
 
     // List imported missing configurations.
-    foreach ($imported_configurations as $dependent_config => $missing_configs) {
-      foreach ($missing_configs as $missing_config) {
-        $this->io()->warning(
-          sprintf(
-            'Missing config <fg=red>%s</> required by: <comment>%s</comment>.',
-             $missing_config,
-             $dependent_config
-          )
-        );
-      }
-    }
-
-    $this->io()->newLine();
-    $this->io()->comment('Mending - Importing configurations from templates...');
-    $this->beforeAction();
-    $imported_templates = $this->configCreator->importTemplateConfigurations();
-    $this->afterAction();
-
-    // List imported templates.
-    foreach ($imported_templates as $template_file) {
-      $this->io()->warning(
+    foreach ($imported_configurations as $missing_config => $dependent_configs) {
+      $this->io()->text(
         sprintf(
-          'Imported template config: <comment>%s</comment>.',
-          $template_file
+          'Imported missing config <info>%s</info> required by:',
+           $missing_config
         )
       );
+      $this->io()->listing($dependent_configs);
     }
+    $this->afterAction();
 
     $this->io()->newLine();
-    $this->io()->comment('Cache rebuild.');
+    $this->io()->section('Mending - Importing configurations from templates...');
+    $this->beforeAction();
+    $imported_templates = $this->configCreator->importTemplateConfigurations();
+
+    // List imported templates.
+    if (!empty($imported_templates)) {
+      $this->io()->text('Imported template config(s):');
+      $this->io()->listing($imported_templates);
+    }
+    $this->afterAction();
+
+    $this->io()->newLine();
+    $this->io()->section('Cache rebuild.');
     $application = Drush::getApplication();
     $command = $application->find('cache:rebuild');
-    $this->beforeAction();
     $command->run(new ArrayInput([]), new NullOutput());
-    $this->afterAction();
 
     if (!$options['create-content']) {
       $this->io()->newLine();
@@ -151,13 +143,13 @@ class CreateConfigCommand extends DrushCommands {
     }
 
     $this->io()->newLine();
-    $this->io()->comment('Creating content - Create CSV files with content for previously created configuration...');
+    $this->io()->section('Creating content - Create CSV files with content for previously created configuration...');
     $this->beforeAction();
     $this->contentCreator->createCsvFiles();
     $this->afterAction();
 
     $this->io()->newLine();
-    $this->io()->comment('Importing content - Importing CSV files with content into database...');
+    $this->io()->section('Importing content - Importing CSV files with content into database...');
     $this->beforeAction();
     $this->contentCreator->importCsvFiles($options['keep-content-files']);
     $this->afterAction();
@@ -168,7 +160,7 @@ class CreateConfigCommand extends DrushCommands {
       $this->io()->comment($this->contentCreator->getOutputDirectory());
     }
     else {
-      $this->io()->comment('Cleanup - Deleting created CSV files with content...');
+      $this->io()->section('Cleanup - Deleting created CSV files with content...');
       $this->beforeAction();
       $this->contentCreator->cleanUp();
       $this->afterAction();
@@ -192,7 +184,7 @@ class CreateConfigCommand extends DrushCommands {
     $end_time = microtime(TRUE);
 
     $execution_time = ($end_time - $this->startActionTime);
-    $this->io()->text('Done: ' . $execution_time . " [s]");
+    $this->logger()->notice('Completed: ' . round($execution_time, 2) . " sec");
   }
 
 }
