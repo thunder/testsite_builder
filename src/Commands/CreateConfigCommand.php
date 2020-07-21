@@ -76,7 +76,7 @@ class CreateConfigCommand extends DrushCommands {
     }
 
     if (!file_exists($file)) {
-      $this->io()->comment('File not found.');
+      $this->logger()->error("$file file not found.");
       return;
     }
 
@@ -85,23 +85,22 @@ class CreateConfigCommand extends DrushCommands {
     $this->io()->newLine();
     $auto_yes = $this->input()->hasOption('yes') ? $this->input()->getOption('yes') : FALSE;
     if (!$auto_yes && !$this->io()->confirm('Are you sure you want to delete all existing content and the configuration of most of the content entity types?')) {
-      $this->io()->comment('Canceled.');
       return;
     }
 
-    $this->io()->section('Cleanup - Deleting existing bundles, fields...');
+    $this->io()->section('Cleanup - Deleting existing bundles, fields');
     $this->beforeAction();
     $this->configCreator->cleanup();
     $this->afterAction();
 
     $this->io()->newLine();
-    $this->io()->section('Preparation - Creating new bundles and fields...');
+    $this->io()->section('Preparation - Creating new bundles and fields');
     $this->beforeAction();
     $this->configCreator->create();
     $this->afterAction();
 
     $this->io()->newLine();
-    $this->io()->section('Mending - Fixing missing configuration dependencies...');
+    $this->io()->section('Mending - Fixing missing configuration dependencies');
     $this->beforeAction();
     $imported_configurations = $this->configCreator->fixMissingConfiguration();
 
@@ -118,7 +117,7 @@ class CreateConfigCommand extends DrushCommands {
     $this->afterAction();
 
     $this->io()->newLine();
-    $this->io()->section('Mending - Importing configurations from templates...');
+    $this->io()->section('Mending - Importing configurations from templates');
     $this->beforeAction();
     $imported_templates = $this->configCreator->importTemplateConfigurations();
 
@@ -143,24 +142,26 @@ class CreateConfigCommand extends DrushCommands {
     }
 
     $this->io()->newLine();
-    $this->io()->section('Creating content - Create CSV files with content for previously created configuration...');
+    $this->io()->section('Creating content - Create CSV files with content for previously created configuration');
     $this->beforeAction();
     $this->contentCreator->createCsvFiles();
     $this->afterAction();
 
     $this->io()->newLine();
-    $this->io()->section('Importing content - Importing CSV files with content into database...');
+    $this->io()->section('Importing content - Importing CSV files with content into database');
     $this->beforeAction();
     $this->contentCreator->importCsvFiles($options['keep-content-files']);
+
+    if ($options['keep-content-files']) {
+      $this->io->text('Created configuration JSON for creation of content and CSV files with content are stored in:');
+      $this->io()->text("<info>{$this->contentCreator->getOutputDirectory()}</info>");
+      $this->io()->writeln('');
+    }
     $this->afterAction();
 
-    $this->io()->newLine();
-    if ($options['keep-content-files']) {
-      $this->io()->comment('Created configuration JSON for creation of content and CSV files with content are stored in: ');
-      $this->io()->comment($this->contentCreator->getOutputDirectory());
-    }
-    else {
-      $this->io()->section('Cleanup - Deleting created CSV files with content...');
+    if (!$options['keep-content-files']) {
+      $this->io()->newLine();
+      $this->io()->section('Cleanup - Deleting created CSV files with content');
       $this->beforeAction();
       $this->contentCreator->cleanUp();
       $this->afterAction();
