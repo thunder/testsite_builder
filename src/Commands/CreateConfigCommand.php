@@ -120,19 +120,24 @@ class CreateConfigCommand extends DrushCommands {
     }
 
     $this->io()->newLine();
-    $this->io()->comment('Mending - Importing configurations from templates...');
+    $this->io()->comment('Enhancing - Importing configurations from templates...');
     $this->beforeAction();
-    $imported_templates = $this->configCreator->importTemplateConfigurations();
+    $import_templates_result = $this->configCreator->importTemplateConfigurations();
     $this->afterAction();
 
     // List imported templates.
-    foreach ($imported_templates as $template_file) {
+    foreach ($import_templates_result['imported'] as $template_file) {
       $this->io()->warning(
         sprintf(
           'Imported template config: <comment>%s</comment>.',
           $template_file
         )
       );
+    }
+
+    // List import template failures.
+    foreach ($import_templates_result['errors'] as $error_message) {
+      $this->io()->error($error_message);
     }
 
     $this->io()->newLine();
