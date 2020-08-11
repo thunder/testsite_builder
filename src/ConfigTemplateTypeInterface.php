@@ -13,6 +13,8 @@ interface ConfigTemplateTypeInterface extends PluginInspectionInterface {
   /**
    * Generates field specific configurations for config type.
    *
+   * @param string $collection_id
+   *   The configuration template collection is used to define unique IDs.
    * @param string $entity_type
    *   The entity type.
    * @param string $bundle
@@ -25,11 +27,15 @@ interface ConfigTemplateTypeInterface extends PluginInspectionInterface {
    * @return \Drupal\testsite_builder\ConfigTemplateMerge
    *   Returns configuration template merge for config type and new field name.
    */
-  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config);
+  public function getConfigChangesForField(string $collection_id, string $entity_type, string $bundle, string $field_name, $source_field_config);
 
   /**
    * Generates bundle specific configurations for config type.
    *
+   * @param string $collection_id
+   *   The configuration template collection is used to define unique IDs.
+   * @param string $entity_type
+   *   The entity type.
    * @param string $bundle
    *   The bundle name.
    * @param mixed $source_config
@@ -38,7 +44,7 @@ interface ConfigTemplateTypeInterface extends PluginInspectionInterface {
    * @return \Drupal\testsite_builder\ConfigTemplateMerge
    *   Returns configuration template merge for config type and bundle.
    */
-  public function getConfigChangesForBundle(string $bundle, $source_config);
+  public function getConfigChangesForBundle(string $collection_id, string $entity_type, string $bundle, $source_config);
 
   /**
    * Get source configuration key for field name.

@@ -18,7 +18,7 @@ class ViewStyleInfo extends Generic {
   /**
    * {@inheritdoc}
    */
-  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+  public function getConfigChangesForField(string $collection_id, string $entity_type, string $bundle, string $field_name, $source_field_config) {
     return new ConfigTemplateMerge(ConfigTemplateMerge::ADD_KEY, $source_field_config, $field_name);
   }
 

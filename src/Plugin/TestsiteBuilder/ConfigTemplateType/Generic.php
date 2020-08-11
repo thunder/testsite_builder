@@ -30,14 +30,14 @@ class Generic extends PluginBase implements ConfigTemplateTypeInterface, Contain
   /**
    * {@inheritdoc}
    */
-  public function getConfigChangesForField(string $entity_type, string $bundle, string $field_name, $source_field_config) {
+  public function getConfigChangesForField(string $collection_id, string $entity_type, string $bundle, string $field_name, $source_field_config) {
     return new ConfigTemplateMerge(ConfigTemplateMerge::SKIP);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getConfigChangesForBundle(string $bundle, $source_config) {
+  public function getConfigChangesForBundle(string $collection_id, string $entity_type, string $bundle, $source_config) {
     return new ConfigTemplateMerge(ConfigTemplateMerge::SKIP);
   }
 

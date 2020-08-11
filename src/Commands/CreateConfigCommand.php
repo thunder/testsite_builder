@@ -117,7 +117,7 @@ class CreateConfigCommand extends DrushCommands {
     $this->afterAction();
 
     $this->io()->newLine();
-    $this->io()->section('Mending - Importing configurations from templates');
+    $this->io()->section('Enhancing - Importing configurations from templates');
     $this->beforeAction();
     $imported_templates = $this->configCreator->importTemplateConfigurations();
 

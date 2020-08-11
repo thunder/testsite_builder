@@ -280,14 +280,23 @@ class ConfigCreator {
   public function importTemplateConfigurations() {
     $template_path = realpath(drupal_get_path('module', 'testsite_builder') . '/template');
 
-    $loadedTemplates = [];
+    $importedTemplates = [];
+    $failedTemplates = [];
     foreach (glob("{$template_path}/*.yml") as $template_file) {
-      $this->configTemplateImporter->loadTemplate($template_file);
-
-      $loadedTemplates[] = basename($template_file);
+      $template_file_name = basename($template_file);
+      try {
+        $this->configTemplateImporter->loadTemplate($template_file);
+        $importedTemplates[] = $template_file_name;
+      }
+      catch (\Exception $e) {
+        $failedTemplates[] = "Loading of template {$template_file_name} failed with error: {$e->getMessage()}";
+      }
     }
 
-    return $loadedTemplates;
+    return [
+      'imported' => $importedTemplates,
+      'errors' => $failedTemplates,
+    ];
   }
 
   /**
