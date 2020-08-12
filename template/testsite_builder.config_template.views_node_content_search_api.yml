@@ -1,0 +1,217 @@
+id: 't1'
+entity_type: 'node'
+templates:
+  search_api_index:
+    source: 'search_api.index.content'
+    fallback: 'testsite_builder.config_template.search_api_index.fallback'
+    pre_generate_clone: []
+    post_generate_clone: []
+    generate_per_field:
+      -
+        type: 'view_dependency_config'
+        name: 'dependencies.config'
+      -
+        type: 'search_api_field_settings'
+        name: 'field_settings'
+    generate_per_bundle: []
+    field_type_mapping:
+      -
+        type: 'string'
+        source_field: 'title'
+      -
+        type: 'boolean'
+        source_field: 'promote'
+      -
+        type: 'entity_reference'
+        soruce_field: 'type'
+        match_rules:
+          storage_settings:
+            target_type: 'node_type'
+      -
+        type: 'entity_reference'
+        soruce_field: 'field_channel'
+        match_rules:
+          storage_settings:
+            target_type: 'taxonomy_term'
+          cardinality: 1
+      -
+        type: 'entity_reference'
+        soruce_field: 'field_tags'
+        match_rules:
+          storage_settings:
+            target_type: 'taxonomy_term'
+          cardinality: -1
+      -
+        type: 'changed'
+        source_field: 'node_changed'
+      -
+        type: 'entity_reference'
+        soruce_field: 'type'
+        match_rules:
+          storage_settings:
+            target_type: 'block'
+        exclude_generation_type:
+          - 'view_dependency_config'
+          - 'search_api_field_settings'
+  view:
+    source: 'views.view.content_search_api'
+    fallback: 'testsite_builder.config_template.views_node_content_search_api.fallback'
+    full_template_plugin: 'generic'
+    pre_generate_clone:
+      -
+        from: 'display.default.display_options.fields.views_bulk_operations_bulk_form'
+        to: 'display.default.display_options.fields.views_bulk_operations_bulk_form'
+      -
+        from: 'display.default.display_options.filters'
+        to: 'display.default.display_options.filters'
+    post_generate_clone:
+      -
+        from: 'display.default.display_options.fields.search_api_operations'
+        to: 'display.default.display_options.fields.search_api_operations'
+    generate_per_field:
+      -
+        type: 'view_dependency_config'
+        name: 'dependencies.config'
+      -
+        type: 'view_style_column'
+        name: 'display.default.display_options.style.options.columns'
+      -
+        type: 'view_style_info'
+        name: 'display.default.display_options.style.options.info'
+      -
+        type: 'view_field'
+        name: 'display.default.display_options.fields'
+      -
+        type: 'view_config_cache_tag'
+        name: 'display.default.cache_metadata.tags'
+      -
+        type: 'view_config_cache_tag'
+        name: 'display.page_1.cache_metadata.tags'
+      -
+        type: '_skip_sort_'
+        name: 'display.default.display_options.sorts'
+    generate_per_bundle:
+      -
+        type: 'view_bundle_path'
+        name: 'display.page_1.display_options.path'
+      -
+        type: 'view_search_api_table'
+        name: 'base_table'
+      -
+        type: 'view_search_api_table'
+        name: 'display.default.display_options.filters.search_api_fulltext.table'
+      -
+        type: 'view_search_api_table'
+        name: 'display.default.display_options.filters.search_api_language.table'
+      -
+        type: 'view_search_api_table'
+        name: 'display.default.display_options.filters.search_api_datasource.table'
+    field_type_mapping:
+      -
+        type: 'boolean'
+        source_field: 'status'
+        templates:
+          -
+            source: 'facets.facet.status'
+            fallback: 'testsite_builder.config_template.views_node_content_search_api_facet.fallback'
+            full_template_plugin: 'view_search_api_facet'
+          -
+            source: 'block.block.thunder_admin_facet_status'
+            fallback: 'testsite_builder.config_template.views_node_content_search_api_facet_block.fallback'
+            full_template_plugin: 'view_search_api_facet_block'
+      -
+        type: 'entity_reference'
+        soruce_field: 'type'
+        match_rules:
+          storage_settings:
+            target_type: 'node_type'
+        templates:
+          -
+            source: 'facets.facet.type'
+            fallback: 'testsite_builder.config_template.views_node_content_search_api_facet.fallback'
+            full_template_plugin: 'view_search_api_facet'
+          -
+            source: 'block.block.thunder_admin_facet_type'
+            fallback: 'testsite_builder.config_template.views_node_content_search_api_facet_block.fallback'
+            full_template_plugin: 'view_search_api_facet_block'
+        exclude_generation_type:
+          - 'view_filter'
+      -
+        type: 'entity_reference'
+        soruce_field: 'field_tags'
+        match_rules:
+          storage_settings:
+            target_type: 'taxonomy_term'
+          cardinality: -1
+        templates:
+          -
+            source: 'facets.facet.tags'
+            fallback: 'testsite_builder.config_template.views_node_content_search_api_facet.fallback'
+            full_template_plugin: 'view_search_api_facet'
+          -
+            source: 'block.block.thunder_admin_facet_tags'
+            fallback: 'testsite_builder.config_template.views_node_content_search_api_facet_block.fallback'
+            full_template_plugin: 'view_search_api_facet_block'
+      -
+        type: 'entity_reference'
+        soruce_field: 'field_channel'
+        match_rules:
+          storage_settings:
+            target_type: 'taxonomy_term'
+          cardinality: 1
+        templates:
+          -
+            source: 'facets.facet.channel'
+            fallback: 'testsite_builder.config_template.views_node_content_search_api_facet.fallback'
+            full_template_plugin: 'view_search_api_facet'
+          -
+            source: 'block.block.thunder_admin_facet_channel'
+            fallback: 'testsite_builder.config_template.views_node_content_search_api_facet_block.fallback'
+            full_template_plugin: 'view_search_api_facet_block'
+      -
+        type: 'entity_reference'
+        soruce_field: 'type'
+        match_rules:
+          storage_settings:
+            target_type: 'block'
+        exclude_generation_type:
+          - 'view_dependency_config'
+          - 'view_style_column'
+          - 'view_style_info'
+          - 'view_field'
+          - 'view_filter'
+          - 'view_config_cache_tag'
+      -
+        type: 'string_long'
+        exclude_generation_type:
+          - 'view_dependency_config'
+          - 'view_style_column'
+          - 'view_style_info'
+          - 'view_field'
+          - 'view_filter'
+          - 'view_config_cache_tag'
+      -
+        type: 'metatag'
+        exclude_generation_type:
+          - 'view_dependency_config'
+          - 'view_style_column'
+          - 'view_style_info'
+          - 'view_field'
+          - 'view_filter'
+          - 'view_config_cache_tag'
+  view_exposed_form_block:
+    source: 'block.block.thunder_admin_exposedformcontent_search_apipage_1'
+    fallback: 'testsite_builder.config_template.views_node_content_search_api_exposed_filter_block.fallback'
+    pre_generate_clone: []
+    post_generate_clone: []
+    generate_per_field: []
+    generate_per_bundle:
+      -
+        type: 'view_search_api_block_plugin'
+        name: 'plugin'
+      -
+        type: 'view_search_api_block_plugin'
+        name: 'settings.id'
+      -
+        type: 'view_search_api_exposed_form_block_path'
+        name: 'visibility.request_path.pages'

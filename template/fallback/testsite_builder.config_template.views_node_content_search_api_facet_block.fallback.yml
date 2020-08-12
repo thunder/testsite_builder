@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - facets.facet.field_name
+  module:
+    - facets
+  theme:
+    - thunder_admin
+id: thunder_admin_facet_field_name
+theme: thunder_admin
+region: content
+weight: -1
+provider: null
+plugin: 'facet_block:field_name'
+settings:
+  id: 'facet_block:field_name'
+  label: 'Field name'
+  provider: facets
+  label_display: visible
+  block_id: thunder_admin_facet_field_name
+visibility: {  }
