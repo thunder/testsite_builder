@@ -8,7 +8,6 @@ use Drupal\Core\Config\Entity\ConfigEntityDependency;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\search_api\Entity\Index;
 use Drupal\testsite_builder\Events\ConfigCreatorEntityBundleCreateEvent;
 use Drupal\testsite_builder\Events\ConfigCreatorEvents;
 use Drupal\testsite_builder\Events\ConfigCreatorFieldCreateEvent;
