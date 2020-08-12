@@ -161,6 +161,15 @@ class ConfigCreator {
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function cleanup() : ConfigCreator {
+    try {
+      foreach ($this->entityTypeManager->getStorage('search_api_index')->loadMultiple() as $index) {
+        $index->delete();
+      }
+    }
+    catch (\Exception $e) {
+      // Search API is not installed.
+    }
+
     foreach ($this->getEntityTypes() as $entity_type) {
       $definition = $this->entityTypeManager->getDefinition($entity_type);
       $bundleEntityType = $definition->getBundleEntityType();
