@@ -125,9 +125,9 @@ class CreateConfigCommand extends DrushCommands {
     $imported_templates = $this->configCreator->importTemplateConfigurations();
 
     // List imported templates.
-    if (!empty($imported_templates)) {
+    if (!empty($imported_templates['imported'])) {
       $this->io()->text('Imported template config(s):');
-      $this->io()->listing($imported_templates);
+      $this->io()->listing($imported_templates['imported']);
     }
     $this->afterAction();
 
