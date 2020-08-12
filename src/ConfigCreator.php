@@ -8,6 +8,7 @@ use Drupal\Core\Config\Entity\ConfigEntityDependency;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\search_api\Entity\Index;
 use Drupal\testsite_builder\Events\ConfigCreatorEntityBundleCreateEvent;
 use Drupal\testsite_builder\Events\ConfigCreatorEvents;
 use Drupal\testsite_builder\Events\ConfigCreatorFieldCreateEvent;
@@ -161,6 +162,15 @@ class ConfigCreator {
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function cleanup() : ConfigCreator {
+    try {
+      foreach ($this->entityTypeManager->getStorage('search_api_index')->loadMultiple() as $index) {
+        $index->delete();
+      }
+    }
+    catch (\Exception $e) {
+      // Search API is not installed.
+    }
+
     foreach ($this->getEntityTypes() as $entity_type) {
       $definition = $this->entityTypeManager->getDefinition($entity_type);
       $bundleEntityType = $definition->getBundleEntityType();
